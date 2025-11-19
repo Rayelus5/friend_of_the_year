@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
+import { authConfig } from "./auth.config" // <--- Importamos la config ligera
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import bcrypt from "bcryptjs"
@@ -13,11 +14,8 @@ const loginSchema = z.object({
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-    adapter: PrismaAdapter(prisma),
-    session: { strategy: "jwt" },
-    pages: {
-        signIn: "/login",
-    },
+    ...authConfig, // <--- Heredamos la config ligera
+    adapter: PrismaAdapter(prisma), // <--- Añadimos Prisma (Solo Node.js)
     providers: [
         Google,
         Credentials({
@@ -28,50 +26,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 password: { label: "Password", type: "password" },
             },
             authorize: async (credentials) => {
-                console.log("🔐 Intento de Login para:", credentials?.email);
-
                 // 1. Validación segura con Zod (safeParse no explota si falla)
                 const parsedCredentials = loginSchema.safeParse(credentials);
-
-                if (!parsedCredentials.success) {
-                    console.log("❌ Datos inválidos:", parsedCredentials.error.errors);
-                    return null;
-                }
-
+                if (!parsedCredentials.success) return null;
                 const { email, password } = parsedCredentials.data;
 
                 try {
-                    // 2. Buscar usuario
-                    const user = await prisma.user.findUnique({
-                        where: { email },
-                    });
-
-                    if (!user) {
-                        console.log("❌ Usuario no encontrado en DB");
-                        return null;
-                    }
-
-                    if (!user.passwordHash) {
-                        console.log("❌ El usuario existe pero no tiene contraseña (quizás usa Google)");
-                        return null;
-                    }
-
-                    // 3. Comparar contraseña
-                    console.log("🔍 Verificando hash...");
+                    const user = await prisma.user.findUnique({ where: { email } });
+                    if (!user || !user.passwordHash) return null;
                     const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
-
-                    if (passwordsMatch) {
-                        console.log("✅ Login ÉXITO. Retornando usuario:", user.id);
-                        return user;
-                    } else {
-                        console.log("❌ Contraseña incorrecta");
-                        return null;
-                    }
-                } catch (error) {
-                    // Esto captura si Prisma o Bcrypt hacen crashear el servidor
-                    console.error("🔥 CRASH en authorize:", error);
+                    if (passwordsMatch) return user;
+                } catch (e) { return null }
                     return null;
-                }
             },
         }),
     ],

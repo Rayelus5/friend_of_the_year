@@ -1,27 +1,27 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { auth } from "@/auth"; // Importamos la configuración de auth
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
+import { NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
+// Inicializamos NextAuth SOLO con la config ligera para el Edge
+const { auth } = NextAuth(authConfig);
+
+export default auth(async (req) => {
+    const { nextUrl } = req;
+    const isLoggedIn = !!req.auth;
 
     // 1. PROTECCIÓN DE DASHBOARD
-    // Si intenta entrar a /dashboard y no tiene sesión -> Login
-    if (pathname.startsWith('/dashboard')) {
-        // @ts-ignore - Auth.js beta type issue workaround
-        const session = await auth(request);
-        if (!session) {
-            const loginUrl = new URL('/login', request.url);
-            // Guardamos adónde quería ir para redirigirle luego
-            loginUrl.searchParams.set('callbackUrl', pathname);
-            return NextResponse.redirect(loginUrl);
-        }
+    // La lógica `authorized` en auth.config.ts ya maneja el true/false,
+    // pero si queremos redirección manual personalizada:
+    if (nextUrl.pathname.startsWith('/dashboard') && !isLoggedIn) {
+        const loginUrl = new URL('/login', req.url);
+        loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
+        return NextResponse.redirect(loginUrl);
     }
 
-    // 2. GESTIÓN DE VOTOS (Cookie Anónima) - Se mantiene igual
+    // 2. GESTIÓN DE VOTOS (Cookie Anónima) - Se mantiene
     const response = NextResponse.next();
-    if (!pathname.startsWith('/_next') && !pathname.includes('.')) {
-        const voterId = request.cookies.get('foty_voter_id');
+    if (!nextUrl.pathname.startsWith('/_next') && !nextUrl.pathname.includes('.')) {
+        const voterId = req.cookies.get('foty_voter_id');
         if (!voterId) {
             const newVoterId = crypto.randomUUID();
             response.cookies.set('foty_voter_id', newVoterId, {
@@ -34,8 +34,9 @@ export async function middleware(request: NextRequest) {
     }
 
     return response;
-}
+});
 
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+    // Matcher para excluir estáticos y llamadas internas
+    matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
