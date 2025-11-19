@@ -1,25 +1,25 @@
-// app/api/polls/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
-// Definimos el tipo como una Promesa
 type Props = {
     params: Promise<{ id: string }>
 }
 
-export async function GET(
-    request: Request,
-    { params }: Props
-) {
+export async function GET(request: Request, { params }: Props) {
     try {
-        // 1. AWAIT params (Cambio clave para Next.js 15)
         const { id } = await params;
 
+        // 1. Identificar usuario
+        const cookieStore = await cookies();
+        const voterId = cookieStore.get('foty_voter_id')?.value;
+
         const poll = await prisma.poll.findUnique({
-            where: { id }, // Ahora id ya es un string válido
+            where: { id },
             include: {
                 options: {
                     orderBy: { order: 'asc' },
+                    include: { participant: true }
                 },
             },
         });
@@ -28,7 +28,35 @@ export async function GET(
             return NextResponse.json({ error: 'Poll not found' }, { status: 404 });
         }
 
-        return NextResponse.json(poll);
+        // 2. Comprobar si ha votado
+        let hasVoted = false;
+        if (voterId) {
+            const vote = await prisma.vote.findUnique({
+                where: {
+                    pollId_voterHash: {
+                        pollId: id,
+                        voterHash: voterId
+                    }
+                }
+            });
+            hasVoted = !!vote;
+        }
+
+        // 3. Formatear respuesta incluyendo 'hasVoted'
+        const formattedPoll = {
+            ...poll,
+            hasVoted, // <--- Nuevo campo
+            options: poll.options.map(opt => ({
+                id: opt.id,
+                name: opt.participant.name,
+                imageUrl: opt.participant.imageUrl,
+                subtitle: opt.subtitle,
+                participantId: opt.participantId
+            }))
+        };
+
+        return NextResponse.json(formattedPoll);
+
     } catch (error) {
         console.error("❌ ERROR EN API:", error);
         return NextResponse.json({ error: 'Internal Error' }, { status: 500 });

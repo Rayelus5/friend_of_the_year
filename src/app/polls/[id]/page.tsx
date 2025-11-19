@@ -1,48 +1,72 @@
 // app/polls/[id]/page.tsx
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import VotingForm from "@/components/VotingForm";
+import { cookies } from 'next/headers'; // Necesario para leer cookie
 
-// Definimos el tipo de props para Next.js 15
 type Props = {
     params: Promise<{ id: string }>
 }
 
 export default async function PollPage({ params }: Props) {
-    // 1. Esperamos params
     const { id } = await params;
+    const cookieStore = await cookies();
+    const voterId = cookieStore.get('foty_voter_id')?.value;
 
-    // 2. Buscamos los datos
+    // 1. Buscar encuesta
     const poll = await prisma.poll.findUnique({
         where: { id },
-        include: { options: { orderBy: { order: 'asc' } } },
+        include: {
+            options: {
+                orderBy: { order: 'asc' },
+                include: { participant: true }
+            }
+        },
     });
 
-    // 3. Si no existe, 404
     if (!poll) notFound();
 
-    // 4. Si ya terminó, redirigir a resultados
-    const now = new Date();
-    if (now > poll.endAt) {
-        redirect(`/polls/${id}/results`);
+    // 2. Buscar si YA VOTÓ
+    let hasVoted = false;
+    if (voterId) {
+        const vote = await prisma.vote.findUnique({
+            where: {
+                pollId_voterHash: {
+                    pollId: id,
+                    voterHash: voterId
+                }
+            }
+        });
+        hasVoted = !!vote;
     }
 
-    return (
-        <main className="min-h-screen bg-slate-50 pb-20">
-            {/* Header con degradado */}
-            <header className="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white py-12 px-4 rounded-b-[2.5rem] shadow-lg mb-8">
-                <div className="max-w-4xl mx-auto text-center">
-                    <h1 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">{poll.title}</h1>
-                    {poll.description && (
-                        <p className="text-indigo-100 text-lg md:text-xl opacity-90 max-w-2xl mx-auto">{poll.description}</p>
-                    )}
-                </div>
-            </header>
+    // 3. Buscar Siguiente
+    const nextPoll = await prisma.poll.findFirst({
+        where: {
+            isPublished: true,
+            createdAt: { gt: poll.createdAt }
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true }
+    });
 
-            <div className="max-w-5xl mx-auto px-4">
-                {/* Pasamos los datos al componente cliente */}
-                <VotingForm poll={poll} />
-            </div>
+    const formattedPoll = {
+        ...poll,
+        options: poll.options.map(opt => ({
+            id: opt.id,
+            name: opt.participant.name,
+            imageUrl: opt.participant.imageUrl,
+            subtitle: opt.subtitle,
+        }))
+    };
+
+    return (
+        <main className="min-h-screen bg-black text-white selection:bg-amber-500/30">
+            <VotingForm
+                poll={formattedPoll}
+                nextPollId={nextPoll?.id || null}
+                initialHasVoted={hasVoted} // Pasamos el estado
+            />
         </main>
     );
 }

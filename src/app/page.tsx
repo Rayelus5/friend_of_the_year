@@ -1,86 +1,93 @@
 import { prisma } from "@/lib/prisma";
+import { GALA_DATE } from "@/lib/config";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale"; // Asegúrate de npm install date-fns
+import Countdown from "@/components/Countdown"; // Reutilizamos tu componente, luego lo estilazaremos mejor
 
-// Forzamos que esta página siempre busque datos frescos
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Obtenemos encuestas ordenadas por fecha de creación
-  const polls = await prisma.poll.findMany({
-    orderBy: { createdAt: "desc" },
-    where: { isPublished: true } // Solo las públicas
+  // 1. Buscar la PRIMERA encuesta para iniciar el flujo
+  // Asumimos que el orden de creación define el orden de la gala
+  const firstPoll = await prisma.poll.findFirst({
+    orderBy: { createdAt: 'asc' },
+    where: { isPublished: true }
   });
 
+  const now = new Date();
+  const isGalaTime = now >= GALA_DATE;
+
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-              Amigo del Año 🏆
-            </h1>
-            <p className="text-gray-500 mt-2">Premios y encuestas para grupos legendarios.</p>
-          </div>
-          <Link 
-            href="/new"
-            className="bg-gray-900 text-white px-5 py-2 rounded-full font-medium text-sm hover:bg-gray-800 transition"
-          >
-            + Crear Nueva
-          </Link>
-        </header>
+    <main className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-black selection:bg-indigo-500/30">
+      
+      {/* Fondo Ambiental (Glow Effects) */}
+      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Grid de Encuestas */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {polls.map((poll) => {
-            const isEnded = new Date() > poll.endAt;
-            
-            return (
-              <Link 
-                key={poll.id} 
-                href={isEnded ? `/polls/${poll.id}/results` : `/polls/${poll.id}`}
-                className="block group"
-              >
-                <article className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1 h-full flex flex-col">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                      isEnded ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-700'
-                    }`}>
-                      {isEnded ? "Finalizada" : "Activa"}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {formatDistanceToNow(poll.createdAt, { addSuffix: true, locale: es })}
-                    </span>
-                  </div>
-                  
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                    {poll.title}
-                  </h2>
-                  <p className="text-gray-500 text-sm line-clamp-2 mb-6 flex-grow">
-                    {poll.description || "Sin descripción"}
-                  </p>
-
-                  <div className="text-indigo-600 font-semibold text-sm flex items-center gap-2">
-                    {isEnded ? "Ver Resultados" : "Votar ahora"} 
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </article>
-              </Link>
-            );
-          })}
-
-          {polls.length === 0 && (
-            <div className="col-span-2 text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
-              <p className="text-gray-400 text-lg mb-4">No hay encuestas activas</p>
-              <Link href="/new" className="text-indigo-600 font-bold hover:underline">
-                ¡Crea la primera!
-              </Link>
-            </div>
-          )}
+      <div className="z-10 max-w-4xl w-full px-6 text-center flex flex-col items-center animate-in fade-in zoom-in duration-1000">
+        
+        {/* Badge Superior */}
+        <div className="mb-8 inline-flex items-center px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm">
+          <span className="flex h-2 w-2 rounded-full bg-indigo-500 mr-2 animate-pulse"></span>
+          <span className="text-xs font-medium tracking-widest text-gray-400 uppercase">
+            Friend of the Year Awards
+          </span>
         </div>
+
+        {/* Título Principal */}
+        <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/40 mb-6">
+          FOTY 2025
+        </h1>
+
+        <p className="text-lg md:text-xl text-gray-400 max-w-2xl mb-12 font-light leading-relaxed">
+          Celebramos los momentos, los memes y las leyendas de nuestro grupo. 
+          Una noche para honrar a los verdaderos protagonistas de nuestra historia.
+        </p>
+
+        {/* Lógica de Botones Principales */}
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          
+          {!isGalaTime ? (
+            /* ESTADO 1: ANTES DE LA GALA -> VOTAR */
+            firstPoll ? (
+              <Link 
+                href={`/polls/${firstPoll.id}`}
+                className="group relative px-8 py-4 bg-white text-black rounded-full font-bold text-lg tracking-wide transition-all hover:scale-105 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]"
+              >
+                COMENZAR VOTACIÓN
+                <span className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 transition-all" />
+              </Link>
+            ) : (
+              <div className="px-8 py-4 glass-panel rounded-full text-gray-500 font-medium">
+                Las urnas están cerradas temporalmente.
+              </div>
+            )
+          ) : (
+            /* ESTADO 2: GALA EN CURSO -> VER RESULTADOS */
+            <Link 
+              href="/results/global" 
+              className="px-8 py-4 bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 rounded-full font-bold text-lg shadow-lg shadow-yellow-500/20 hover:scale-105 transition-transform"
+            >
+              VER LOS RESULTADOS
+            </Link>
+          )}
+
+        </div>
+
+        {/* Contador Footer */}
+        <div className="mt-20 border-t border-white/5 pt-8 w-full max-w-md">
+            <p className="text-xs text-gray-600 uppercase tracking-widest mb-4">Tiempo para la Gala</p>
+            {/* Aquí usaremos una versión "Dark" de tu contador */}
+            <div className="text-gray-300">
+              <Countdown targetDate={GALA_DATE} />
+            </div>
+        </div>
+
       </div>
+
+      {/* Footer simple */}
+      <footer className="absolute bottom-6 text-xs text-gray-700">
+        Created by @<a href="https://rayelus.com/portfolio" className="underline">Rayelus</a>. Built with Next.js.
+      </footer>
     </main>
   );
 }

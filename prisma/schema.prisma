@@ -9,57 +9,75 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum VotingType {
-  SINGLE
-  MULTIPLE
-  LIMITED_MULTIPLE
-  SUBSET
+// --- MODELOS NUEVOS ---
+
+// El "Amigo" o Entidad recurrente
+model Participant {
+  id        String   @id @default(uuid())
+  name      String
+  imageUrl  String?  // URL de su foto oficial
+  createdAt DateTime @default(now())
+  
+  // Relación inversa: En qué encuestas ha sido nominado
+  nominations Option[]
 }
 
 model Poll {
-  id                     String     @id @default(uuid())
-  title                  String
-  description            String?
-  votingType             VotingType
-  maxChoices             Int?       // null = ilimitado, >0 = límite
-  startAt                DateTime
-  endAt                  DateTime
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
-  isPublished            Boolean    @default(false)
-  allowMultipleSelection Boolean    @default(false) // Helper flag
+  id            String     @id @default(uuid())
+  title         String
+  description   String?
+  votingType    VotingType @default(SINGLE)
+  maxChoices    Int?       // Para LIMITED_MULTIPLE
   
-  options                Option[]
-  votes                  Vote[]
+  // Control de fechas
+  startAt       DateTime   @default(now())
+  endAt         DateTime   // Cierre de votación
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  isPublished   Boolean    @default(false)
+  
+  options       Option[]
+  votes         Vote[]
 }
 
+// La "Nominación": Un participante en una encuesta específica
 model Option {
-  id        String   @id @default(uuid())
-  pollId    String
-  name      String
-  imageUrl  String?
-  subtitle  String?
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
+  id            String      @id @default(uuid())
+  pollId        String
+  participantId String
   
-  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  votes     VoteOption[]
+  // Campos opcionales específicos de esta nominación
+  // Ej: Participant es "Juan", pero subtitle es "Por dormirse en el cine"
+  subtitle      String?     
+  
+  order         Int         @default(0)
+  createdAt     DateTime    @default(now())
 
-  @@index([pollId])
+  poll          Poll        @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  
+  votes         VoteOption[]
+
+  // Un amigo solo puede estar una vez en la misma encuesta
+  @@unique([pollId, participantId])
 }
+
+// --- SISTEMA DE VOTOS (Mantenemos igual la lógica) ---
 
 model Vote {
   id          String       @id @default(uuid())
   pollId      String
   createdAt   DateTime     @default(now())
   
-  // Anonimato: No guardamos UserID. 
-  // Opcional: hash de cookie para deduplicación ligera si se desea.
-  sessionHash String?      
+  // CAMBIO: Hacemos obligatorio el hash del votante
+  voterHash   String       
 
   poll        Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
   voteOptions VoteOption[]
 
+  // REGLA DE ORO: Un votante (voterHash) solo puede tener un voto por encuesta (pollId)
+  @@unique([pollId, voterHash])
   @@index([pollId])
 }
 
@@ -70,7 +88,10 @@ model VoteOption {
   
   vote     Vote   @relation(fields: [voteId], references: [id], onDelete: Cascade)
   option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
+}
 
-  @@index([optionId])
-  @@index([voteId])
+enum VotingType {
+  SINGLE
+  MULTIPLE
+  LIMITED_MULTIPLE
 }
