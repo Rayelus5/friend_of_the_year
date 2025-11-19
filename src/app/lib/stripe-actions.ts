@@ -6,7 +6,7 @@ import Stripe from "stripe";
 import { redirect } from "next/navigation";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-12-28.acacia',
+    typescript: true,
 });
 
 // --- CHECKOUT (SUSCRIBIRSE) ---

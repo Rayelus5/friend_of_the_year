@@ -1,21 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import HomeHero from "@/components/HomeHero"; // Reutilizamos tu componente visual épico
+import HomeHero from "@/components/HomeHero";
+import { Lock } from "lucide-react"; // Necesitarás importar iconos si usas la UI de bloqueo
 
 type Props = {
-    params: Promise<{ slug: string }>
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ key?: string }>; // Capturamos query params
 }
 
 export const dynamic = "force-dynamic";
 
-export default async function EventLobbyPage({ params }: Props) {
+export default async function EventLobbyPage({ params, searchParams }: Props) {
     const { slug } = await params;
+    const { key } = await searchParams;
 
-    // 1. Buscar el evento por SLUG
     const event = await prisma.event.findUnique({
         where: { slug },
         include: {
-            // Buscamos la primera encuesta para el botón "Comenzar"
             polls: {
                 where: { isPublished: true },
                 orderBy: { order: 'asc' },
@@ -27,21 +28,36 @@ export default async function EventLobbyPage({ params }: Props) {
 
     if (!event) notFound();
 
-    // 2. Calcular estado de la Gala
-    // Si no tiene fecha definida, asumimos futuro lejano
+    // --- LÓGICA DE SEGURIDAD ---
+    // Si es privado Y la clave no coincide...
+    if (!event.isPublic && event.accessKey !== key) {
+        return (
+            <main className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center selection:bg-red-500/30">
+                <div className="bg-neutral-900/50 border border-red-500/20 p-10 rounded-3xl backdrop-blur-md max-w-md w-full">
+                    <div className="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
+                        <Lock size={32} />
+                    </div>
+                    <h1 className="text-2xl font-bold text-white mb-2">Evento Privado</h1>
+                    <p className="text-gray-400 mb-6">
+                        Necesitas un enlace de invitación válido para acceder a esta gala.
+                    </p>
+                    <div className="text-xs text-gray-600 font-mono">
+                        Error: Invalid Access Key
+                    </div>
+                </div>
+            </main>
+        );
+    }
+    // ---------------------------
+
     const galaDate = event.galaDate || new Date('2030-01-01');
     const now = new Date();
     const isGalaTime = now >= galaDate;
-
-    // 3. Obtener ID de la primera encuesta (si existe)
     const firstPollId = event.polls[0]?.id;
 
-    // 4. Renderizar con el componente visual que ya teníamos
-    // (HomeHero necesita adaptarse ligeramente si queremos mostrar el título del evento dinámico,
-    // pero por ahora usará "FOTY 2025" hardcoded. Lo arreglaremos luego).
     return (
-        <HomeHero 
-            firstPollId={firstPollId} 
+        <HomeHero
+            firstPollId={firstPollId}
             isGalaTime={isGalaTime}
             galaDate={galaDate}
             title={event.title}

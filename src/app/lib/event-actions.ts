@@ -13,14 +13,13 @@ export async function updateEvent(eventId: string, formData: FormData) {
 
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
-    const galaDateStr = formData.get('galaDate') as string; // Recibimos el string crudo
+    const galaDateStr = formData.get('galaDate') as string;
     const isPublic = formData.get('isPublic') === 'on';
 
-    // Lógica de validación de fecha
+    // Validación de fecha segura
     let galaDate: Date | null = null;
     if (galaDateStr && galaDateStr !== "") {
         const parsedDate = new Date(galaDateStr);
-        // Verificamos si es una fecha válida (getTime() devuelve NaN si es inválida)
         if (!isNaN(parsedDate.getTime())) {
             galaDate = parsedDate;
         }
@@ -31,9 +30,40 @@ export async function updateEvent(eventId: string, formData: FormData) {
         data: {
             title,
             description,
-            galaDate, // Ahora pasamos Date válido o null
+            galaDate,
             isPublic
         }
+    });
+
+    revalidatePath(`/dashboard/event/${eventId}`);
+    // Si cambiamos el slug o la privacidad, revalidamos la home pública también
+    if (isPublic) revalidatePath('/polls');
+}
+
+export async function deleteEvent(eventId: string) {
+    const session = await auth();
+    if (!session?.user) return;
+
+    await prisma.event.delete({
+        where: { id: eventId, userId: session.user.id }
+    });
+
+    revalidatePath('/dashboard');
+    redirect('/dashboard');
+}
+
+// --- SEGURIDAD (ESTA ES LA QUE TE FALTABA) ---
+
+export async function rotateEventKey(eventId: string) {
+    const session = await auth();
+    if (!session?.user) return;
+
+    // Generar nueva clave aleatoria
+    const newKey = crypto.randomUUID();
+
+    await prisma.event.update({
+        where: { id: eventId, userId: session.user.id },
+        data: { accessKey: newKey }
     });
 
     revalidatePath(`/dashboard/event/${eventId}`);
@@ -73,12 +103,15 @@ export async function deleteEventParticipant(participantId: string, eventId: str
 export async function createEventPoll(eventId: string, formData: FormData) {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
-    const endAt = formData.get('endAt') as string;
+    const endAtStr = formData.get('endAt') as string;
     const participantIds = formData.getAll('participantIds') as string[];
 
-    if (!title || !endAt) return;
+    if (!title || !endAtStr) return;
 
-    // Calcular orden (último + 1)
+    // Validación fecha encuesta
+    const endAt = new Date(endAtStr);
+    if (isNaN(endAt.getTime())) return; // Evitar crash si fecha inválida
+
     const lastPoll = await prisma.poll.findFirst({
         where: { eventId },
         orderBy: { order: 'desc' }
@@ -89,10 +122,10 @@ export async function createEventPoll(eventId: string, formData: FormData) {
         data: {
             title,
             description,
-            endAt: new Date(endAt),
+            endAt,
             eventId,
             order: newOrder,
-            isPublished: true, // Por defecto publicadas en el panel
+            isPublished: true,
             options: {
                 create: participantIds.map((pId) => ({ participantId: pId }))
             }
@@ -105,24 +138,26 @@ export async function createEventPoll(eventId: string, formData: FormData) {
 export async function updateEventPoll(pollId: string, eventId: string, formData: FormData) {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
-    const endAt = formData.get('endAt') as string;
+    const endAtStr = formData.get('endAt') as string;
     const participantIds = formData.getAll('participantIds') as string[];
+
+    const endAt = new Date(endAtStr);
 
     await prisma.poll.update({
         where: { id: pollId },
-        data: { title, description, endAt: new Date(endAt) }
+        data: { title, description, endAt: isNaN(endAt.getTime()) ? undefined : endAt }
     });
 
-    // Sincronizar Participantes (Borrar desmarcados, Añadir nuevos)
+    // Sincronizar Participantes
     const currentOptions = await prisma.option.findMany({ where: { pollId } });
 
-    // 1. Borrar
+    // Borrar desmarcados
     const toDelete = currentOptions.filter(o => !participantIds.includes(o.participantId));
     for (const opt of toDelete) {
         await prisma.option.delete({ where: { id: opt.id } });
     }
 
-    // 2. Crear
+    // Crear nuevos marcados
     const currentIds = currentOptions.map(o => o.participantId);
     const toCreate = participantIds.filter(pId => !currentIds.includes(pId));
     for (const pId of toCreate) {
@@ -147,21 +182,4 @@ export async function reorderEventPolls(items: { id: string, order: number }[], 
         )
     );
     revalidatePath(`/dashboard/event/${eventId}`);
-}
-
-
-// --- NUEVA FUNCIÓN: ELIMINAR EVENTO ---
-
-export async function deleteEvent(eventId: string) {
-    const session = await auth();
-    if (!session?.user) return;
-
-    // Borramos el evento (y por la cascada, se borrarán sus polls y participantes)
-    await prisma.event.delete({
-        where: { id: eventId, userId: session.user.id }
-    });
-
-    // Redirigimos al dashboard general
-    revalidatePath('/dashboard');
-    redirect('/dashboard');
 }

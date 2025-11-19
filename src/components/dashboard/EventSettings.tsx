@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { updateEvent, deleteEvent } from "@/app/lib/event-actions";
-import { Save, Trash2, AlertTriangle } from "lucide-react";
+import { updateEvent, deleteEvent, rotateEventKey } from "@/app/lib/event-actions"; // <--- Importamos rotateEventKey
+import { Save, Trash2, AlertTriangle, RefreshCw, Copy } from "lucide-react"; // <--- Nuevos iconos
+import { useRouter } from "next/navigation";
 
 type EventData = {
     id: string;
@@ -11,13 +12,15 @@ type EventData = {
     galaDate: Date | null;
     isPublic: boolean;
     slug: string;
+    accessKey: string; // <--- IMPORTANTE: Recibimos la clave
 };
 
 export default function EventSettings({ event }: { event: EventData }) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+    const router = useRouter();
 
-    // Formatear fecha para input datetime-local de forma segura
     const defaultDate = event.galaDate
         ? new Date(event.galaDate).toISOString().slice(0, 16)
         : "";
@@ -25,8 +28,21 @@ export default function EventSettings({ event }: { event: EventData }) {
     const handleDelete = async () => {
         setIsDeleting(true);
         await deleteEvent(event.id);
-        // No ponemos setIsDeleting(false) porque seremos redirigidos
     };
+
+    const handleRotateKey = async () => {
+        if (!confirm("¿Seguro? El enlace anterior dejará de funcionar para todos.")) return;
+
+        setIsRegenerating(true);
+        await rotateEventKey(event.id);
+        setIsRegenerating(false);
+        // La página se recargará sola gracias a revalidatePath
+    };
+
+    // Construcción de la URL segura
+    // Usamos window.location.origin solo si estamos en el cliente para evitar errores de SSR
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const shareUrl = `${origin}/e/${event.slug}${!event.isPublic ? `?key=${event.accessKey}` : ''}`;
 
     return (
         <div className="max-w-2xl space-y-8">
@@ -66,7 +82,6 @@ export default function EventSettings({ event }: { event: EventData }) {
                                 defaultValue={defaultDate}
                                 className="w-full bg-black border border-white/20 rounded p-3 text-white dark-calendar"
                             />
-                            <p className="text-[10px] text-gray-500 mt-1">Los resultados se revelarán en esta fecha.</p>
                         </div>
 
                         <div>
@@ -92,33 +107,53 @@ export default function EventSettings({ event }: { event: EventData }) {
                 </form>
             </div>
 
-            {/* 2. ZONA DE ENLACES */}
-            <div className="p-6 border border-blue-500/20 bg-blue-500/5 rounded-2xl">
-                <h3 className="text-sm font-bold text-blue-400 mb-2 uppercase tracking-wider">Enlace de Invitación</h3>
+            {/* 2. ZONA DE ENLACES (Nueva Lógica Privada) */}
+            <div className="p-6 border border-blue-500/20 bg-blue-500/5 rounded-2xl space-y-4">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                        {event.isPublic ? '🌍 Enlace Público' : '🔒 Enlace Privado (Con Clave)'}
+                    </h3>
+
+                    {/* Botón para regenerar clave solo si es privado */}
+                    {!event.isPublic && (
+                        <button
+                            onClick={handleRotateKey}
+                            disabled={isRegenerating}
+                            className="text-[10px] flex items-center gap-1 text-blue-300 hover:text-white transition-colors disabled:opacity-50"
+                        >
+                            <RefreshCw size={12} className={isRegenerating ? "animate-spin" : ""} />
+                            {isRegenerating ? "Generando..." : "Regenerar Clave"}
+                        </button>
+                    )}
+                </div>
+
                 <div className="flex items-center gap-4">
                     <div className="flex-1 bg-black/50 p-3 rounded border border-white/10 text-sm text-gray-400 font-mono truncate select-all">
-                        {`${typeof window !== 'undefined' ? window.location.origin : ''}/e/${event.slug}`}
+                        {shareUrl || "Cargando..."}
                     </div>
                     <button
                         onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/e/${event.slug}`);
+                            navigator.clipboard.writeText(shareUrl);
                             alert("¡Enlace copiado!");
                         }}
-                        className="text-xs font-bold text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-500 transition-colors"
+                        className="text-xs font-bold text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-500 transition-colors flex items-center gap-2"
                     >
-                        Copiar
+                        <Copy size={14} /> Copiar
                     </button>
                 </div>
+
+                {!event.isPublic && (
+                    <p className="text-[10px] text-blue-300/60 border-l-2 border-blue-500/30 pl-2">
+                        Este enlace incluye un token de seguridad único. Si lo regeneras, el enlace anterior dejará de funcionar para todos los invitados.
+                    </p>
+                )}
             </div>
 
-            {/* 3. ZONA DE PELIGRO (ELIMINAR) */}
+            {/* 3. ZONA DE PELIGRO */}
             <div className="p-6 border border-red-500/20 bg-red-500/5 rounded-2xl">
                 <h3 className="text-sm font-bold text-red-400 mb-2 uppercase tracking-wider flex items-center gap-2">
                     <AlertTriangle size={16} /> Zona de Peligro
                 </h3>
-                <p className="text-sm text-gray-400 mb-4">
-                    Eliminar este evento borrará permanentemente todas las encuestas, participantes y votos asociados. Esta acción no se puede deshacer.
-                </p>
                 <div className="flex justify-end">
                     <button
                         onClick={() => setIsDeleteModalOpen(true)}
@@ -137,7 +172,6 @@ export default function EventSettings({ event }: { event: EventData }) {
                         <p className="text-gray-400 text-sm mb-6">
                             Vas a eliminar <strong>{event.title}</strong>. Todos los datos se perderán para siempre.
                         </p>
-
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setIsDeleteModalOpen(false)}
@@ -148,7 +182,7 @@ export default function EventSettings({ event }: { event: EventData }) {
                             </button>
                             <button
                                 onClick={handleDelete}
-                                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors disabled:opacity-50"
                                 disabled={isDeleting}
                             >
                                 {isDeleting ? "Eliminando..." : "Sí, eliminar"}

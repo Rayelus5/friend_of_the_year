@@ -75,6 +75,8 @@ model Event {
   isPublic    Boolean  @default(false) // Public vs Private
   tags        String[] // ["videojuegos", "amigos", "cine"]
   
+  accessKey   String   @default(uuid())
+  
   // Configuración
   galaDate    DateTime? // Fecha de revelación
   isAnonymousVoting Boolean @default(true) // Configurable por el creador

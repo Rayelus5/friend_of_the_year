@@ -3,12 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import ProfileForm from "@/components/dashboard/ProfileForm";
+import SubscriptionCard from "@/components/dashboard/SubscriptionCard"; // <--- Importar
 
 export default async function ProfilePage() {
     const session = await auth();
     if (!session?.user?.id) redirect("/login");
 
-    // Obtener datos frescos de la DB
     const user = await prisma.user.findUnique({
         where: { id: session.user.id },
     });
@@ -20,7 +20,14 @@ export default async function ProfilePage() {
         username: user.username,
         image: user.image,
         email: user.email,
-        hasPassword: !!user.passwordHash, // Boolean para saber si mostrar el form de password
+        hasPassword: !!user.passwordHash,
+    };
+
+    // Datos específicos para la tarjeta de suscripción
+    const subData = {
+        subscriptionStatus: user.subscriptionStatus,
+        stripePriceId: user.stripePriceId,
+        subscriptionEndDate: user.subscriptionEndDate
     };
 
     return (
@@ -33,7 +40,13 @@ export default async function ProfilePage() {
                     <p className="text-gray-400">Gestiona tu identidad y seguridad.</p>
                 </header>
 
-                <ProfileForm user={userData} />
+                <div className="space-y-8">
+                    {/* 1. TARJETA DE SUSCRIPCIÓN (NUEVO) */}
+                    <SubscriptionCard user={subData} />
+
+                    {/* 2. FORMULARIOS DE PERFIL */}
+                    <ProfileForm user={userData} />
+                </div>
 
             </div>
         </main>
