@@ -8,7 +8,7 @@ type Poll = {
     title: string;
 };
 
-export default function GlobalResultsClient({ polls }: { polls: Poll[] }) {
+export default function GlobalResultsClient({ polls, eventSlug }: { polls: Poll[], eventSlug: string }) {
 
     // Tipamos explícitamente las variantes
     const container: Variants = {
@@ -51,7 +51,7 @@ export default function GlobalResultsClient({ polls }: { polls: Poll[] }) {
                         </p>
                     </div>
 
-                    <Link href="/" className="group relative px-6 py-2 rounded-full overflow-hidden bg-white/5 border border-white/10 hover:border-white/30 transition-colors">
+                    <Link href={`/e/${eventSlug}`} className="group relative px-6 py-2 rounded-full overflow-hidden bg-white/5 border border-white/10 hover:border-white/30 transition-colors">
                         <span className="relative z-10 text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Volver al Lobby</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-sky-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </Link>

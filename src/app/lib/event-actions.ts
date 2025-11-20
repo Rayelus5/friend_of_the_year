@@ -16,7 +16,11 @@ export async function updateEvent(eventId: string, formData: FormData) {
     const galaDateStr = formData.get('galaDate') as string;
     const isPublic = formData.get('isPublic') === 'on';
 
-    // Validación de fecha segura
+    // --- AÑADIR ESTO ---
+    // Los checkboxes envían 'on' si están marcados, o null si no.
+    const isAnonymousVoting = formData.get('isAnonymousVoting') === 'on';
+    // -------------------
+
     let galaDate: Date | null = null;
     if (galaDateStr && galaDateStr !== "") {
         const parsedDate = new Date(galaDateStr);
@@ -31,12 +35,12 @@ export async function updateEvent(eventId: string, formData: FormData) {
             title,
             description,
             galaDate,
-            isPublic
+            isPublic,
+            isAnonymousVoting, // <--- AÑADIRLO AQUÍ PARA QUE SE GUARDE
         }
     });
 
     revalidatePath(`/dashboard/event/${eventId}`);
-    // Si cambiamos el slug o la privacidad, revalidamos la home pública también
     if (isPublic) revalidatePath('/polls');
 }
 

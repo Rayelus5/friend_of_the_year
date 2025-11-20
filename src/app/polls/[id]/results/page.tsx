@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { calculateResults } from "@/lib/countResults";
 import Link from "next/link";
-import { GALA_DATE } from "@/lib/config";
 import Countdown from "@/components/Countdown";
 import ResultsClient from "@/components/ResultsClient"; // El componente animado
 
@@ -15,9 +14,25 @@ export const dynamic = "force-dynamic";
 export default async function ResultsPage({ params }: Props) {
     const { id } = await params;
 
-    // 1. COMPROBACIÓN DE FECHA (Sistema Anti-Spoiler)
+    const poll = await prisma.poll.findUnique({
+        where: { id },
+        include: {
+        event: { select: { galaDate: true, slug: true } }, // <--- IMPORTANTE
+        options: { include: { participant: true } },
+        votes: { include: { voteOptions: true } }
+        }
+    });
+
+    if (!poll) return (
+        <div className="min-h-screen bg-black flex items-center justify-center text-gray-500">
+            Encuesta no encontrada
+        </div>
+    );
+
+    // 2. COMPROBACIÓN DE FECHA (Usando la fecha del evento)
+    const galaDate = poll.event.galaDate || new Date('2030-01-01');
     const now = new Date();
-    const isGalaTime = now >= GALA_DATE;
+    const isGalaTime = now >= galaDate;
 
     // SI AÚN NO ES LA GALA: Mostramos pantalla de bloqueo (Server Side Rendered)
     if (!isGalaTime) {
@@ -40,32 +55,17 @@ export default async function ResultsPage({ params }: Props) {
                     <div className="py-4 border-t border-b border-white/5 mb-8">
                         <p className="text-xs text-blue-500 font-mono uppercase tracking-widest mb-2">Tiempo restante</p>
                         <div className="text-white">
-                            <Countdown targetDate={GALA_DATE} />
+                            <Countdown targetDate={galaDate} />
                         </div>
                     </div>
 
-                    <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1">
+                    <Link href={`/e/${poll.event.slug}`} className="text-sm text-gray-400 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1">
                         Volver al inicio
                     </Link>
                 </div>
             </main>
         );
     }
-
-    // 2. SI ES DÍA DE GALA: OBTENEMOS DATOS DE DB
-    const poll = await prisma.poll.findUnique({
-        where: { id },
-        include: {
-            options: { include: { participant: true } },
-            votes: { include: { voteOptions: true } }
-        }
-    });
-
-    if (!poll) return (
-        <div className="min-h-screen bg-black flex items-center justify-center text-gray-500">
-            Encuesta no encontrada
-        </div>
-    );
 
     // 3. CÁLCULO DE RESULTADOS
     const allVoteOptions = poll.votes.flatMap(v => v.voteOptions);
@@ -93,12 +93,14 @@ export default async function ResultsPage({ params }: Props) {
 
     // 4. RENDERIZADO DEL COMPONENTE CLIENTE (ANIMACIONES)
     return (
-        <ResultsClient
-            pollTitle={poll.title}
-            pollDescription={poll.description}
-            results={results}
-            winners={winners}
-            winnerImage={winnerImage}
+        <ResultsClient 
+        pollTitle={poll.title}
+        pollDescription={poll.description}
+        results={results}
+        winners={winners}
+        winnerImage={winnerImage}
+        // Añadimos la URL de retorno correcta
+        backUrl={`/e/${poll.event.slug}/results`} 
         />
     );
 }

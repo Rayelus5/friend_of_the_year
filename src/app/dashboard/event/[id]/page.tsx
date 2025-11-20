@@ -1,14 +1,14 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getPlanFromUser } from "@/lib/plans"; // <--- Importar
+import { getEventStats } from "@/app/lib/stats-actions"; // <--- Importar
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import EventTabs from "@/components/dashboard/EventTabs";
 import EventSettings from "@/components/dashboard/EventSettings";
-
-// --- CAMBIO DE IMPORTS AQUÍ ---
 import ParticipantList from "@/components/dashboard/ParticipantList";
 import PollList from "@/components/dashboard/PollList";
-// ------------------------------
+import EventStatistics from "@/components/dashboard/EventStatistics"; // <--- Importar
 
 type Props = {
     params: Promise<{ id: string }>
@@ -20,7 +20,7 @@ export default async function EventDashboardPage({ params }: Props) {
 
     if (!session?.user) redirect("/login");
 
-    // 1. Buscar el evento y verificar propiedad
+    // 1. Buscar evento
     const event = await prisma.event.findUnique({
         where: { id },
         include: {
@@ -35,21 +35,28 @@ export default async function EventDashboardPage({ params }: Props) {
         }
     });
 
-    // Seguridad: Si no existe o no es tuyo -> 404
-    if (!event || event.userId !== session.user.id) {
-        notFound();
-    }
+    if (!event || event.userId !== session.user.id) notFound();
+
+    // 2. Obtener usuario y plan
+    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const plan = user ? getPlanFromUser(user) : { slug: 'free' };
+
+    // 3. Obtener estadísticas (Solo si es el dueño, que ya comprobamos)
+    const stats = await getEventStats(event.id);
 
     return (
         <main className="min-h-screen bg-black text-white">
 
-            {/* Header del Evento */}
             <header className="border-b border-white/10 bg-neutral-900/30">
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                         <Link href="/dashboard" className="hover:text-white transition-colors">Mis Eventos</Link>
                         <span>/</span>
                         <span>{event.title}</span>
+                        {/* Badge de Plan */}
+                        <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-white/10 text-gray-400">
+                            Plan {plan.name}
+                        </span>
                     </div>
                     <h1 className="text-4xl font-bold text-white tracking-tight">{event.title}</h1>
                 </div>
@@ -57,29 +64,28 @@ export default async function EventDashboardPage({ params }: Props) {
 
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <EventTabs
-                    // TAB 1: Configuración
-                    settings={<EventSettings event={event} />}
+                    // PESTAÑA 1: Estadísticas (NUEVA)
+                    stats={
+                        <EventStatistics stats={stats} planSlug={plan.slug} />
+                    }
 
-                    // TAB 2: Participantes
+                    // PESTAÑA 2: Configuración (Actualizada con plan)
+                    settings={<EventSettings event={event} planSlug={plan.slug} />}
+
+                    // PESTAÑA 3: Participantes
                     participants={
                         <div className="max-w-4xl">
-                            <div className="mb-6">
+                            <div className="mb-6 flex justify-between items-center">
                                 <h2 className="text-xl font-bold">Roster del Evento</h2>
-                                <p className="text-sm text-gray-400">Gestiona los amigos nominables para este evento.</p>
                             </div>
-                            {/* Pasamos el eventId obligatorio */}
                             <ParticipantList initialData={event.participants} eventId={event.id} />
                         </div>
                     }
 
-                    // TAB 3: Encuestas
+                    // PESTAÑA 4: Encuestas
                     polls={
                         <div className="max-w-5xl">
-                            <div className="mb-6">
-                                <h2 className="text-xl font-bold">Categorías de Votación</h2>
-                                <p className="text-sm text-gray-400">Crea, edita y reordena los premios.</p>
-                            </div>
-                            {/* Pasamos el eventId obligatorio */}
+                            <h2 className="text-xl font-bold mb-6">Votaciones</h2>
                             <PollList initialPolls={event.polls} allParticipants={event.participants} eventId={event.id} />
                         </div>
                     }

@@ -62,6 +62,7 @@ export default async function EventLobbyPage({ params, searchParams }: Props) {
             galaDate={galaDate}
             title={event.title}
             description={event.description || ""}
+            slug={event.slug}
         />
     );
 }

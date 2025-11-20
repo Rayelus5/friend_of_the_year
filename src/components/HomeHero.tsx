@@ -11,6 +11,7 @@ type Props = {
     // Nuevas props opcionales para personalización
     title?: string;
     description?: string;
+    slug?: string;
 };
 
 const containerVariants: Variants = {
@@ -36,7 +37,8 @@ export default function HomeHero({
     isGalaTime,
     galaDate,
     title = "FOTY 2025", // Valor por defecto
-    description = "Celebramos los momentos, los memes y las leyendas."
+    description = "Celebramos los momentos, los memes y las leyendas.",
+    slug
 }: Props) {
     return (
         <main className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-black selection:bg-sky-500/30">
@@ -94,11 +96,11 @@ export default function HomeHero({
                     ) : (
                         <div className="relative group cursor-pointer">
                             <div className="absolute -inset-1 bg-gradient-to-r from-sky-400 via-blue-500 to-sky-400 rounded-full blur-xl opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-x"></div>
-                            <Link href="/results/global" className="relative flex items-center justify-center px-10 py-5 rounded-full font-extrabold text-xl shadow-2xl hover:scale-[1.02] transition-transform active:scale-95 overflow-hidden bg-black">
+                            <Link href={slug ? `/e/${slug}/results` : `/`} className="relative flex items-center justify-center px-10 py-5 rounded-full font-extrabold text-xl shadow-2xl hover:scale-[1.02] transition-transform active:scale-95 overflow-hidden bg-black">
                                 <div className="absolute inset-0 bg-gradient-to-r from-sky-300 to-blue-500 opacity-100" />
                                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-75 mix-blend-overlay" />
                                 <span className="relative z-10 text-blue-950 tracking-wide flex items-center gap-2">
-                                    VER CEREMONIA <span className="text-xs align-top">🏆</span>
+                                    VER RESULTADOS
                                 </span>
                             </Link>
                         </div>

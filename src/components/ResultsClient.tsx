@@ -18,9 +18,10 @@ type Props = {
     results: Result[];
     winners: Result[];
     winnerImage: string | null | undefined;
+    backUrl: string;
 };
 
-export default function ResultsClient({ pollTitle, pollDescription, results, winners, winnerImage }: Props) {
+export default function ResultsClient({ pollTitle, pollDescription, results, winners, winnerImage, backUrl }: Props) {
 
     // 2. Tipamos explícitamente como :Variants
     const containerVariants: Variants = {
@@ -59,7 +60,7 @@ export default function ResultsClient({ pollTitle, pollDescription, results, win
                         {pollTitle}
                     </h1>
                     <Link
-                        href="/results/global"
+                        href={backUrl}
                         className="text-sm text-gray-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5"
                     >
                         ← Volver a la Ceremonia

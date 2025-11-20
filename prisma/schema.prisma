@@ -102,6 +102,7 @@ model Poll {
   order         Int        @default(0)
   
   isPublished   Boolean    @default(true)
+  endAt         DateTime?
 
   eventId       String
   event         Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -133,6 +134,8 @@ model Option {
   participantId String
   subtitle      String?
   
+  order         Int         @default(0)
+
   poll          Poll        @relation(fields: [pollId], references: [id], onDelete: Cascade)
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
   

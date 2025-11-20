@@ -12,10 +12,13 @@ type EventData = {
     galaDate: Date | null;
     isPublic: boolean;
     slug: string;
-    accessKey: string; // <--- IMPORTANTE: Recibimos la clave
+    accessKey: string;
+    planSlug: string;
 };
 
-export default function EventSettings({ event }: { event: EventData }) {
+export default function EventSettings({ event, planSlug }: { event: EventData, planSlug: string }) {
+    const isPlus = planSlug === 'plus';
+
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
@@ -96,6 +99,34 @@ export default function EventSettings({ event }: { event: EventData }) {
                                 <span className="text-sm text-gray-300">Evento Público</span>
                             </label>
                         </div>
+                    </div>
+
+                    {/* NUEVO: CONTROL DE ANONIMATO (PLUS ONLY) */}
+                    <div className={`p-4 rounded-lg border ${isPlus ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/5 bg-black/30'}`}>
+                        <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="isAnonymous" className="font-bold text-sm text-white">Votación Anónima</label>
+                                {!isPlus && <span className="px-2 py-0.5 bg-purple-500 text-black text-[10px] font-bold rounded uppercase">Plus Only</span>}
+                            </div>
+                            {/* Switch visual */}
+                            <div className="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+                                <input
+                                    type="checkbox"
+                                    name="isAnonymousVoting"
+                                    id="isAnonymous"
+                                    defaultChecked={event.isAnonymousVoting}
+                                    disabled={!isPlus} // BLOQUEADO SI NO ES PLUS
+                                    className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-500"
+                                    style={{ right: event.isAnonymousVoting ? '2px' : 'auto', left: event.isAnonymousVoting ? 'auto' : '2px', top: '2px' }}
+                                />
+                                <label htmlFor="isAnonymous" className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${!isPlus ? 'bg-gray-800' : 'bg-purple-900'}`}></label>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            {isPlus
+                                ? "Si desactivas esto, podrás ver quién votó qué en las estadísticas avanzadas."
+                                : "Actualiza al plan Premium+ para identificar a los votantes en eventos privados."}
+                        </p>
                     </div>
 
                     <div className="pt-6 border-t border-white/10 flex justify-end">
