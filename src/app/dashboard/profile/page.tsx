@@ -5,6 +5,8 @@ import Link from "next/link";
 import ProfileForm from "@/components/dashboard/ProfileForm";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
     const session = await auth();
     if (!session?.user?.id) redirect("/login");
