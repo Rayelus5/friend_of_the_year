@@ -17,7 +17,8 @@ type EventSummary = {
         polls: number;
     };
     user: {
-        name: string | null;
+        name: string;
+        username: string;
         image: string | null;
     };
 };
@@ -45,20 +46,23 @@ export default function PublicEventCard({ event }: { event: EventSummary }) {
                 <div className="p-7 flex-1 relative z-10 flex flex-col">
 
                     {/* Header: Autor y Fecha */}
-                    <div className="flex items-center gap-3 mb-5">
-                        <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden relative border border-white/10">
+                    <div className="flex items-center gap-2 mb-5">
+                        <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden relative border border-white/10">
                             {event.user.image ? (
-                                <img src={event.user.image} alt="User" className="w-full h-full object-cover" />
+                                <img src={event.user.image} alt={event.user.name?.charAt(0)} className="w-full h-full object-cover text-center text-[12px] content-center" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400">
                                     {event.user.name?.[0] || "?"}
                                 </div>
                             )}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                            <span className="text-gray-300">{event.user.name || "Anónimo"}</span>
+                        <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+                            <div className="flex flex-col items-start">
+                                <span className="text-gray-300">{event.user.name || "Anónimo"}</span>
+                                <span className="max-w-[120px] text-gray-600 text-[11px] align-middle truncate ...">@{event.user.username || "@username"}</span>
+                            </div>
                             <span className="w-1 h-1 rounded-full bg-gray-700"></span>
-                            <span>{formatDistanceToNow(event.createdAt, { addSuffix: true, locale: es })}</span>
+                            <span className="bg-white/5 px-3 py-1 rounded-full">{formatDistanceToNow(event.createdAt, { addSuffix: true, locale: es })}</span>
                         </div>
                     </div>
 

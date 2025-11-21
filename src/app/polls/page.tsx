@@ -29,7 +29,7 @@ export default async function ExplorePage({ searchParams }: Props) {
         },
         orderBy: { createdAt: 'desc' },
         include: {
-            user: { select: { name: true, image: true } },
+            user: { select: { name: true, username: true, image: true } },
             _count: { select: { participants: true, polls: true } }
         }
     });

@@ -145,11 +145,11 @@ export default function ProfileForm({ user }: { user: UserData }) {
                     <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
                         <div>
                             <label className="block text-xs uppercase text-gray-500 mb-2">Nombre Display</label>
-                            <input name="name" defaultValue={user.name || ""} className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
+                            <input required name="name" defaultValue={user.name || ""} className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
                         </div>
                         <div>
                             <label className="block text-xs uppercase text-gray-500 mb-2">Username (@)</label>
-                            <input name="username" defaultValue={user.username || ""} className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
+                            <input required name="username" defaultValue={user.username || ""} className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none" />
                         </div>
                     </div>
 
