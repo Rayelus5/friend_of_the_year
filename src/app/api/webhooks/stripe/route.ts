@@ -18,9 +18,7 @@ export async function POST(req: Request) {
     const headersList = await headers();
     const signature = headersList.get("Stripe-Signature") as string;
 
-    if (!signature) {
-        return new NextResponse("Missing Stripe Signature", { status: 400 });
-    }
+    if (!signature) return new NextResponse("Missing Stripe Signature", { status: 400 });
 
     let buffer: Buffer;
     try {
@@ -46,66 +44,82 @@ export async function POST(req: Request) {
     try {
         const session = event.data.object as any;
 
-        // --- CASO 1: CHECKOUT COMPLETADO ---
+        // --- CASO 1: CHECKOUT COMPLETADO (PRIMER PAGO) ---
         if (event.type === "checkout.session.completed") {
             const appUserId = session.metadata?.userId;
             const subscriptionId = session.subscription as string;
             const customerId = session.customer as string;
-
-            if (!subscriptionId || !customerId || !appUserId) {
-                return new NextResponse("Missing essential IDs", { status: 400 });
-            }
-
-            console.log(`🔄 Checkout completado: ${subscriptionId}`);
+            const userEmail = session.customer_details?.email; // Email usado en el checkout
 
             // Recuperar estado FRESCO
             const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
             const priceId = subscription.items.data[0]?.price.id;
 
-            await prisma.user.update({
-                where: { id: appUserId },
-                data: {
-                    stripeCustomerId: customerId,
-                    stripeSubscriptionId: subscriptionId,
-                    stripePriceId: priceId,
-                    subscriptionStatus: "active",
-                    subscriptionEndDate: new Date(subscription.current_period_end * 1000),
-                    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-                },
-            });
+            // Estrategia de búsqueda: ID interno -> Email -> Fallo
+            let user = null;
+            if (appUserId) {
+                user = await prisma.user.findUnique({ where: { id: appUserId } });
+            } else if (userEmail) {
+                user = await prisma.user.findUnique({ where: { email: userEmail } });
+            }
+
+            if (user) {
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        stripeCustomerId: customerId,
+                        stripeSubscriptionId: subscriptionId,
+                        stripePriceId: priceId,
+                        subscriptionStatus: "active",
+                        subscriptionEndDate: new Date(subscription.current_period_end * 1000),
+                        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+                    },
+                });
+                console.log(`✅ CHECKOUT: Usuario ${user.email} vinculado y activado.`);
+            } else {
+                console.error("❌ Error: No se encontró usuario para vincular el pago.");
+            }
         }
 
-        // --- CASO 2: SUSCRIPCIÓN ACTUALIZADA (La clave para tu error) ---
+        // --- CASO 2: SUSCRIPCIÓN ACTUALIZADA (RENOVACIÓN O CANCELACIÓN) ---
         if (event.type === "customer.subscription.updated") {
-            // El objeto 'session' aquí es una Subscription antigua
-            const oldSubscription = session;
-            const customerId = oldSubscription.customer as string;
-            const subscriptionId = oldSubscription.id as string;
+            const subscriptionId = session.id as string;
+            const customerId = session.customer as string;
 
-            const userToUpdate = await prisma.user.findUnique({
+            // 1. Obtener datos FRESCOS de Stripe (siempre)
+            const freshSubscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
+            const priceId = freshSubscription.items.data[0]?.price.id;
+
+            // 2. Buscar al usuario de forma inteligente (ID Cliente -> Email)
+            let userToUpdate = await prisma.user.findUnique({
                 where: { stripeCustomerId: customerId },
-                select: { id: true, email: true }
             });
 
+            // Si no lo encontramos por ID de Cliente (desincronización), buscamos por email
+            if (!userToUpdate) {
+                console.log(`⚠️ Customer ID ${customerId} no encontrado en DB. Intentando recuperar por email...`);
+                const customer = await stripe.customers.retrieve(customerId) as any;
+                if (customer.email) {
+                    userToUpdate = await prisma.user.findUnique({ where: { email: customer.email } });
+                }
+            }
+
             if (userToUpdate) {
-                // Ignoramos los datos del evento y pedimos los FRESCOS (actualizados) a Stripe
-                // Esto arregla el problema de reenviar eventos antiguos
-                const freshSubscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
-
-                const priceId = freshSubscription.items.data[0]?.price.id;
-
                 await prisma.user.update({
                     where: { id: userToUpdate.id },
                     data: {
+                        // Actualizamos el Customer ID por si estaba mal
+                        stripeCustomerId: customerId,
+                        stripeSubscriptionId: subscriptionId,
                         stripePriceId: priceId,
                         subscriptionStatus: freshSubscription.status,
                         subscriptionEndDate: new Date(freshSubscription.current_period_end * 1000),
-
-                        // Ahora sí guardamos el valor REAL actual
                         cancelAtPeriodEnd: freshSubscription.cancel_at_period_end,
                     },
                 });
-                console.log(`✅ SYNC FRESH: ${userToUpdate.email} -> CancelAtEnd: ${freshSubscription.cancel_at_period_end}`);
+                console.log(`✅ SYNC: Usuario ${userToUpdate.email} actualizado. Cancelación: ${freshSubscription.cancel_at_period_end}`);
+            } else {
+                console.error(`❌ Error crítico: No se encontró usuario para la suscripción ${subscriptionId}`);
             }
         }
 
@@ -113,16 +127,27 @@ export async function POST(req: Request) {
         if (event.type === "customer.subscription.deleted") {
             const customerId = session.customer as string;
 
-            await prisma.user.update({
-                where: { stripeCustomerId: customerId },
-                data: {
-                    subscriptionStatus: "free",
-                    stripePriceId: null,
-                    stripeSubscriptionId: null,
-                    subscriptionEndDate: null,
-                    cancelAtPeriodEnd: false,
-                },
-            });
+            // Misma lógica de búsqueda inteligente
+            let userToUpdate = await prisma.user.findUnique({ where: { stripeCustomerId: customerId } });
+
+            if (!userToUpdate) {
+                const customer = await stripe.customers.retrieve(customerId) as any;
+                if (customer.email) userToUpdate = await prisma.user.findUnique({ where: { email: customer.email } });
+            }
+
+            if (userToUpdate) {
+                await prisma.user.update({
+                    where: { id: userToUpdate.id },
+                    data: {
+                        subscriptionStatus: "free",
+                        stripePriceId: null,
+                        stripeSubscriptionId: null,
+                        subscriptionEndDate: null,
+                        cancelAtPeriodEnd: false,
+                    },
+                });
+                console.log(`🗑️ DELETE: Suscripción eliminada para ${userToUpdate.email}`);
+            }
         }
 
         return new NextResponse("OK", { status: 200 });
