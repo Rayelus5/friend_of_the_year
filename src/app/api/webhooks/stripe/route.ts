@@ -3,8 +3,11 @@ import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 
+// 1. Inicializamos sin forzar versión para evitar errores de "Invalid API version"
+// Si TypeScript se queja, puedes poner: as any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     typescript: true,
+    apiVersion: "2024-12-18.acacia", // Ponemos EXACTAMENTE la que sale en tu log de Stripe
 });
 
 export async function POST(req: Request) {
@@ -14,55 +17,81 @@ export async function POST(req: Request) {
     let event: Stripe.Event;
 
     try {
-        // 1. Verificar que la llamada viene realmente de Stripe
         event = stripe.webhooks.constructEvent(
             body,
             signature,
             process.env.STRIPE_WEBHOOK_SECRET!
         );
     } catch (error: any) {
+        console.error("⚠️ Webhook Signature Error:", error.message);
         return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
     }
 
-    const session = event.data.object as Stripe.Checkout.Session;
+    // Bloque de seguridad para capturar errores lógicos
+    try {
+        const session = event.data.object as Stripe.Checkout.Session;
 
-    // 2. Manejar el evento de "Pago Completado"
-    if (event.type === "checkout.session.completed") {
-        // Recuperamos los datos importantes
-        const subscriptionId = session.subscription as string;
-        const userId = session.metadata?.userId;
+        // --- CASO 1: PAGO COMPLETADO ---
+        if (event.type === "checkout.session.completed" || event.type === "customer.subscription.updated") {
 
-        // Si no hay userId, algo raro pasó (no debería ocurrir si usaste metadata)
-        if (!userId) {
-            return new NextResponse("User ID not found in metadata", { status: 400 });
+            // Validar datos mínimos
+            if (!session.subscription) {
+                console.error("❌ Error: El evento no tiene ID de suscripción.");
+                return new NextResponse("Missing subscription ID", { status: 400 });
+            }
+
+            const subscriptionId = session.subscription as string;
+            const customerId = session.customer as string;
+
+            console.log(`🔄 Procesando suscripción: ${subscriptionId} para cliente: ${customerId}`);
+
+            // Recuperar detalles de la suscripción de Stripe
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+            // Validar que existen items
+            if (!subscription.items.data.length) {
+                console.error("❌ Error: La suscripción no tiene items/precios.");
+                return new NextResponse("Invalid subscription data", { status: 400 });
+            }
+
+            const priceId = subscription.items.data[0].price.id;
+
+            // Actualizar Base de Datos
+            console.log(`💾 Guardando en DB... Precio: ${priceId}`);
+
+            const updatedUser = await prisma.user.update({
+                where: { stripeCustomerId: customerId },
+                data: {
+                    stripeSubscriptionId: subscriptionId,
+                    stripePriceId: priceId,
+                    subscriptionStatus: "active",
+                    subscriptionEndDate: new Date(subscription.current_period_end * 1000),
+                },
+            });
+
+            console.log(`✅ ÉXITO: Usuario ${updatedUser.email} actualizado a Premium.`);
         }
 
-        // Obtener detalles de la suscripción para saber el Price ID (el plan)
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const priceId = subscription.items.data[0].price.id;
+        // --- CASO 2: SUSCRIPCIÓN CANCELADA ---
+        if (event.type === "customer.subscription.deleted") {
+            const customerId = session.customer as string;
+            console.log(`🗑️ Cancelando suscripción para cliente: ${customerId}`);
 
-        // 3. Actualizar Usuario en Base de Datos
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                stripeSubscriptionId: subscriptionId,
-                stripeCustomerId: session.customer as string,
-                stripePriceId: priceId,
-                subscriptionStatus: "active",
-                // Opcional: Calcular fecha fin sumando 1 mes, aunque Stripe lo gestiona
-                subscriptionEndDate: new Date(subscription.current_period_end * 1000),
-            },
-        });
+            await prisma.user.update({
+                where: { stripeCustomerId: customerId },
+                data: {
+                    subscriptionStatus: "free",
+                    stripePriceId: null
+                },
+            });
+        }
 
-        console.log(`✅ Usuario ${userId} actualizado a plan ${priceId}`);
+        return new NextResponse("OK", { status: 200 });
+
+    } catch (error: any) {
+        // Aquí capturamos el error real que causaba el 500
+        console.error("🔥 CRITICAL WEBHOOK ERROR:", error);
+        // Devolvemos 500 pero con mensaje para debug (solo visible en logs de Vercel)
+        return new NextResponse(`Internal Server Error: ${error.message}`, { status: 500 });
     }
-
-    // 3. Manejar cancelación/impago (Opcional para MVP, pero recomendado)
-    if (event.type === "invoice.payment_failed" || event.type === "customer.subscription.deleted") {
-        const subscriptionId = session.id; // En estos eventos el object es la sub o invoice
-        // Buscaríamos al usuario por subscriptionId y lo pondríamos en 'free' o 'past_due'
-        // (Implementación simplificada para MVP: solo activamos)
-    }
-
-    return new NextResponse(null, { status: 200 });
 }

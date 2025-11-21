@@ -22,6 +22,7 @@ export async function createEvent(formData: FormData) {
 
     if (currentEvents >= plan.quota) {
         return {
+            success: false,
             error: `Has alcanzado el límite de tu plan ${plan.name} (${currentEvents}/${plan.quota}). Actualiza a Premium.`
         };
     }
@@ -32,7 +33,6 @@ export async function createEvent(formData: FormData) {
     // Generar Slug único
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 10000);
 
-    // --- LÓGICA DE FECHA POR DEFECTO (AQUÍ ESTÁ LA MAGIA) ---
     // Calculamos la fecha actual + 2 días
     const defaultGalaDate = new Date();
     defaultGalaDate.setDate(defaultGalaDate.getDate() + 2);
