@@ -17,7 +17,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig, // <--- Heredamos la config ligera
     adapter: PrismaAdapter(prisma), // <--- Añadimos Prisma (Solo Node.js)
     providers: [
-        Google,
+        Google({
+        clientId: process.env.AUTH_GOOGLE_ID,
+        clientSecret: process.env.AUTH_GOOGLE_SECRET,
+        allowDangerousEmailAccountLinking: true, // Permite vincular si el email ya existe
+        
+        // Truco Pro: Generamos datos por defecto al crear el usuario
+        profile(profile) {
+            const randomSuffix = Math.floor(Math.random() * 10000);
+            // Generamos un username basado en el email (ej: juan4923)
+            const baseUsername = profile.email?.split('@')[0] || 'user';
+            const username = `${baseUsername}${randomSuffix}`;
+
+            return {
+                id: profile.sub,
+                name: profile.name,
+                email: profile.email,
+                image: profile.picture,
+                // Campos extra de nuestro Schema:
+                username: username,
+                subscriptionStatus: 'free',
+                emailVerified: new Date(), // Google ya verificó el email, confiamos en él
+            }
+        },
+        }),
         Credentials({
             // Importante: Poner nombre para identificarlo en logs si hay varios
             name: "credentials",

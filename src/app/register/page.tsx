@@ -15,7 +15,7 @@ export default function RegisterPage() {
                     <Link href="/" className="inline-block mb-6 group">
                         <div className="flex items-center gap-2 text-gray-500 font-mono text-xs tracking-[0.2em] uppercase group-hover:text-white transition-colors">
                             <span className="group-hover:-translate-x-1 transition-transform">←</span>
-                            Volver a FOTY
+                            Volver al inicio
                         </div>
                     </Link>
                     <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Crea tu cuenta</h1>
