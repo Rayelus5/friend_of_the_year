@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prodev": "npx dotenv -e .env -- npm run dev",
     "build": "next build",
     "db:reset": "npx dotenv -e .env prisma migrate reset --force",
     "db:push": "npx dotenv -e .env prisma db push",
