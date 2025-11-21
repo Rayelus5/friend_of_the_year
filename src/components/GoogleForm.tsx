@@ -1,18 +1,12 @@
 'use client';
 
 import { useActionState } from 'react'; // <--- CAMBIO
-import { authenticate } from '@/app/lib/actions';
+import { authenticateGoogle } from '@/app/lib/actions';
 import { motion } from 'framer-motion';
 import { is } from 'date-fns/locale';
 
 export default function GoogleForm() {
-    const actionWrapper = (formData?: FormData) => {
-        // Si authenticate devuelve una función que espera formData, ajústalo aquí.
-        // Si authenticate('google') devuelve una promesa/redirect directo, llamaremos solo al hacer submit:
-        return authenticate('google')(formData);
-    };
-
-    const [errorMessage, dispatch, isPending] = useActionState(actionWrapper, undefined);
+    const [errorMessage, dispatch, isPending] = useActionState(authenticateGoogle, undefined);
 
     return (
         <form action={dispatch} className="space-y-6">
