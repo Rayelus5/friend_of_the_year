@@ -9,7 +9,7 @@ export async function authenticate(
 ) {
     try {
         // AÑADIDO: Tercer argumento { redirectTo: "/" }
-        await signIn('credentials', formData, { redirectTo: "/" });
+        await signIn('credentials', formData, { redirectTo: "/dashboard/profile" });
     } catch (error) {
         if (error instanceof AuthError) {
             switch (error.type) {
