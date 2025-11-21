@@ -55,60 +55,55 @@ export async function createCheckoutSession(priceId: string) {
     }
 
     const BASE_URL = getBaseUrl();
+    let redirectUrl: string | null = null; // Variable para guardar la URL y redirigir AL FINAL
 
     try {
         // --- ESCENARIO 1: ACTUALIZACIÓN DE PLAN (YA ES PREMIUM) ---
-        // Si ya tiene una suscripción activa, no abrimos checkout, la actualizamos directamente.
+        // Si ya tiene suscripción, lo enviamos al Portal para que gestione el cambio allí.
+        // Esto cumple con el requisito de "Pasar por la pasarela" para confirmar cambios.
         if (user.stripeSubscriptionId && user.subscriptionStatus === 'active') {
 
-            // 1. Recuperar la suscripción de Stripe para ver qué items tiene
-            const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-            const currentItem = subscription.items.data[0];
-
-            // Si intenta suscribirse a lo mismo que ya tiene, no hacemos nada
-            if (currentItem.price.id === priceId) {
-                return { error: "Ya estás suscrito a este plan." };
-            }
-
-            // 2. Actualizar la suscripción existente (Swap Plan)
-            // Esto cobra la diferencia o ajusta el crédito automáticamente
-            await stripe.subscriptions.update(user.stripeSubscriptionId, {
-                items: [{
-                    id: currentItem.id,     // ID del item que vamos a cambiar
-                    price: priceId,         // Nuevo precio (Plan)
-                }],
-                proration_behavior: 'always_invoice', // Generar factura por la diferencia ahora mismo
+            // Creamos una sesión de portal que permite actualizar suscripciones
+            const portalSession = await stripe.billingPortal.sessions.create({
+                customer: customerId,
+                return_url: `${BASE_URL}/dashboard/profile`,
+                // Opcional: Si Stripe lo tiene habilitado en tu cuenta, esto le lleva directo a "Update Plan"
+                // flow_data: {
+                //   type: 'subscription_update',
+                //   subscription_update: { subscription: user.stripeSubscriptionId }
+                // }
             });
 
-            // 3. Redirigir al perfil con éxito (El webhook se encargará de actualizar la DB en segundo plano)
-            redirect(`${BASE_URL}/dashboard/profile?updated=true`);
-            return;
+            redirectUrl = portalSession.url;
         }
-
         // --- ESCENARIO 2: NUEVA SUSCRIPCIÓN (ES FREE) ---
-        // Si no tiene suscripción activa, creamos una sesión de Checkout nueva.
-        const checkoutSession = await stripe.checkout.sessions.create({
-            customer: customerId,
-            mode: 'subscription',
-            payment_method_types: ['card'],
-            line_items: [{ price: priceId, quantity: 1 }],
-            success_url: `${BASE_URL}/dashboard/profile?checkout_status=success`,
-            cancel_url: `${BASE_URL}/premium?checkout_status=cancelled`,
-            metadata: {
-                userId: session.user.id
-            }
-        });
+        else {
+            const checkoutSession = await stripe.checkout.sessions.create({
+                customer: customerId,
+                mode: 'subscription',
+                payment_method_types: ['card'],
+                line_items: [{ price: priceId, quantity: 1 }],
+                success_url: `${BASE_URL}/dashboard/profile?checkout_status=success`,
+                cancel_url: `${BASE_URL}/premium?checkout_status=cancelled`,
+                metadata: {
+                    userId: session.user.id
+                }
+            });
 
-        if (checkoutSession.url) {
-            redirect(checkoutSession.url);
+            if (checkoutSession.url) {
+                redirectUrl = checkoutSession.url;
+            }
         }
 
     } catch (error) {
         console.error("Stripe Action Error:", error);
-        if ((error as any).digest?.startsWith('NEXT_REDIRECT')) {
-            throw error;
-        }
-        return { error: "Error al procesar la solicitud." };
+        return { error: "Error al conectar con la pasarela de pago." };
+    }
+
+    // --- REDIRECCIÓN SEGURA (Fuera del try/catch) ---
+    // Esto evita que el `redirect` sea capturado como un error y muestre el alert.
+    if (redirectUrl) {
+        redirect(redirectUrl);
     }
 }
 
@@ -123,6 +118,8 @@ export async function createCustomerPortalSession() {
         throw new Error("No tienes una suscripción activa para gestionar.");
     }
 
+    let redirectUrl: string | null = null;
+
     try {
         const BASE_URL = getBaseUrl();
 
@@ -131,14 +128,13 @@ export async function createCustomerPortalSession() {
             return_url: `${BASE_URL}/dashboard/profile`,
         });
 
-        if (portalSession.url) {
-            redirect(portalSession.url);
-        }
+        redirectUrl = portalSession.url;
     } catch (error) {
         console.error("Stripe Portal Error:", error);
-        if ((error as any).digest?.startsWith('NEXT_REDIRECT')) {
-            throw error;
-        }
         return { error: "Error al abrir el portal." };
+    }
+
+    if (redirectUrl) {
+        redirect(redirectUrl);
     }
 }
