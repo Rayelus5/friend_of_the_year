@@ -6,6 +6,7 @@ import { Trophy, Lock, Palette, ArrowRight, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { clsx } from "clsx";
 import { text } from "stream/consumers";
+import AwardMockup3D from "@/components/home/AwardMockup3D";
 
 // --- DATOS DE ANIMACIÓN DEL TÍTULO ---
 const WORDS = [
@@ -193,7 +194,7 @@ export default function LandingClient() {
                         </Link>
                         <Link
                             href="/polls"
-                            className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-full font-bold text-lg hover:bg-white/10 transition-colors backdrop-blur-sm hover:border-white/20"
+                            className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all  hover:border-white/20"
                         >
                             Explorar Eventos
                         </Link>
@@ -204,34 +205,7 @@ export default function LandingClient() {
                         variants={itemVariants}
                         className="mt-20 relative w-full max-w-5xl aspect-video bg-neutral-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden group z-10"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
-
-                        {/* Elementos falsos animados dentro del mockup */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="relative w-full h-full max-w-2xl py-20 flex flex-col items-center justify-center gap-6">
-
-                                {/* Círculo pulsante */}
-                                <motion.div
-                                    animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
-                                    transition={{ duration: 4, repeat: Infinity }}
-                                    className="w-24 h-24 bg-gradient-to-tr from-blue-500 to-cyan-400 rounded-full shadow-[0_0_50px_rgba(59,130,246,0.6)] mb-4"
-                                />
-
-                                {/* Barras de carga abstractas */}
-                                <div className="w-3/4 h-4 bg-white/10 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: "0%" }}
-                                        whileInView={{ width: "70%" }}
-                                        transition={{ duration: 1.5, ease: "circOut", delay: 0.5 }}
-                                        className="h-full bg-white/20"
-                                    />
-                                </div>
-                                <div className="w-1/2 h-4 bg-white/5 rounded-full" />
-                            </div>
-                        </div>
-
-                        {/* Reflejo inferior */}
-                        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black via-black/80 to-transparent" />
+                        <AwardMockup3D className="w-full h-full" />
                     </motion.div>
                 </motion.div>
             </section>
