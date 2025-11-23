@@ -71,15 +71,14 @@ export default function CompletedView({ targetDate, eventSlug }: Props) {
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 tracking-tighter mb-4">
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 tracking-tighter mb-4 leading-snug">
                         Votos Registrados
                     </h1>
                     <div className="h-1 w-24 bg-gradient-to-r from-transparent via-blue-500 to-transparent mx-auto opacity-50"></div>
                 </motion.div>
 
                 <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-400 leading-relaxed">
-                    Tu voz ha sido escuchada. La suerte está echada. <br />
-                    Prepárate para la noche de las revelaciones.
+                    Gracias por tu participación.
                 </motion.p>
 
                 <motion.div
@@ -88,7 +87,7 @@ export default function CompletedView({ targetDate, eventSlug }: Props) {
                 >
                     <p className="text-xs font-bold text-sky-500 mb-4 tracking-[0.3em] uppercase flex items-center justify-center gap-2">
                         <span className="w-2 h-2 bg-sky-500 rounded-full animate-pulse"></span>
-                        Cuenta regresiva para la Gala
+                        LA GALA COMIENZA EN
                         <span className="w-2 h-2 bg-sky-500 rounded-full animate-pulse"></span>
                     </p>
                     <div className="text-gray-200">

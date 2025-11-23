@@ -65,7 +65,7 @@ export default function EventStatistics({ stats, planSlug }: Props) {
 
             {/* --- PAYWALL --- */}
             {isFree && (
-                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-center animate-in fade-in duration-700">
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-center animate-in fade-in duration-700">
                     {/* ... Mismo contenido de paywall anterior ... */}
                     <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(245,158,11,0.5)]">
                         <Lock className="text-white w-8 h-8" />

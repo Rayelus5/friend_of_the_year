@@ -105,7 +105,7 @@ export default function Countdown({ targetDate, onEnd }: { targetDate: Date, onE
             {/* Lógica: Si quedan días, mostramos Días. Si no, ocultamos Días para centrar H:M:S */}
             {timeLeft.days > 0 && (
                 <>
-                    <TimeUnit value={timeLeft.days} label="DÍAS" />
+                    <TimeUnit value={timeLeft.days} label={timeLeft.days === 1 ? "DÍA" : "DÍAS"} />
                     <Separator />
                 </>
             )}

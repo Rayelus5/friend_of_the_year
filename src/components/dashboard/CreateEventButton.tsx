@@ -50,7 +50,7 @@ export default function CreateEventButton({ planSlug }: { planSlug: string }) {
         const value = e.target.value;
         // Regex: Permite letras, números, espacios y puntuación básica .,:;!¡?¿()
         // Bloquea emojis y símbolos raros como @#$%&/
-        if (/^[\w\s\-\.,:;!¡?¿()'áéíóúÁÉÍÓÚñÑüÜ]*$/.test(value)) {
+        if (/^[\w\s\-\.,:;!¡?¿()'`´"áéíóúÁÉÍÓÚñÑüÜ]*$/.test(value)) {
             setTitle(value);
             setServerError(null); // Limpiar error si escribe algo válido
         }
@@ -85,7 +85,7 @@ export default function CreateEventButton({ planSlug }: { planSlug: string }) {
                 onClick={() => setIsOpen(true)}
                 className={`bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-full font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2 cursor-pointer`}
             >
-                <span>+</span> Nuevo Evento
+                <Plus size={20} /> Nuevo Evento
             </button>
 
             {isOpen && (
@@ -129,6 +129,7 @@ export default function CreateEventButton({ planSlug }: { planSlug: string }) {
                                     <input
                                         name="title"
                                         required
+                                        maxLength={50}
                                         value={title} // Controlado por React
                                         onChange={handleTitleChange} // Filtrado activo
                                         placeholder="Ej: Premios Verano 2025"
@@ -145,6 +146,7 @@ export default function CreateEventButton({ planSlug }: { planSlug: string }) {
                                     <textarea
                                         name="description"
                                         rows={3}
+                                        maxLength={200}
                                         placeholder="¿De qué va esta gala?"
                                         className="w-full bg-black border border-white/20 rounded p-3 text-white focus:border-blue-500 outline-none transition-colors resize-none"
                                     />
@@ -158,6 +160,9 @@ export default function CreateEventButton({ planSlug }: { planSlug: string }) {
                                         placeholder="Etiquetas, separadas por comas"
                                         className="w-full bg-black border border-white/20 rounded p-3 text-white focus:border-blue-500 outline-none"
                                     />
+                                    <p className="text-[10px] text-gray-600 mt-1">
+                                        Etiquetas separadas por comas. (ej. "tag1, tag2, tag3")
+                                    </p>
                                 </div>
 
                                 {/* Mensaje de error del servidor */}

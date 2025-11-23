@@ -31,7 +31,7 @@ export default function EventTabs({
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={clsx(
-                            "px-6 py-3 text-sm font-bold transition-colors relative whitespace-nowrap",
+                            "px-6 py-3 text-sm font-bold transition-colors relative whitespace-nowrap cursor-pointer",
                             activeTab === tab.id ? "text-blue-500" : "text-gray-400 hover:text-white"
                         )}
                     >

@@ -9,6 +9,7 @@ import EventSettings from "@/components/dashboard/EventSettings";
 import ParticipantList from "@/components/dashboard/ParticipantList";
 import PollList from "@/components/dashboard/PollList";
 import EventStatistics from "@/components/dashboard/EventStatistics"; // <--- Importar
+import { Folders, UsersRound } from "lucide-react";
 
 type Props = {
     params: Promise<{ id: string }>
@@ -74,9 +75,10 @@ export default async function EventDashboardPage({ params }: Props) {
 
                     // PESTAÑA 3: Participantes
                     participants={
-                        <div className="max-w-4xl">
-                            <div className="mb-6 flex justify-between items-center">
-                                <h2 className="text-xl font-bold">Roster del Evento</h2>
+                        <div className="max-w-5xl">
+                            <div className="mb-6 flex gap-2 items-center">
+                                <UsersRound className="w-6 h-6 text-gray-400" />
+                                <h2 className="text-xl font-bold">Participantes del Evento</h2>
                             </div>
                             <ParticipantList initialData={event.participants} eventId={event.id} />
                         </div>
@@ -85,7 +87,10 @@ export default async function EventDashboardPage({ params }: Props) {
                     // PESTAÑA 4: Encuestas
                     polls={
                         <div className="max-w-5xl">
-                            <h2 className="text-xl font-bold mb-6">Votaciones</h2>
+                            <div className="mb-6 flex gap-2 items-center">
+                                <Folders className="w-6 h-6 text-gray-400" />
+                                <h2 className="text-xl font-bold">Categorías del Evento</h2>
+                            </div>
                             <PollList initialPolls={event.polls} allParticipants={event.participants} eventId={event.id} />
                         </div>
                     }

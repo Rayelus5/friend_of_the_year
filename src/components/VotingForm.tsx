@@ -176,7 +176,7 @@ export default function VotingForm({
             >
                 <span className="text-blue-500 text-xs font-bold tracking-[0.3em] uppercase">Categoría</span>
                 <motion.h1 
-                    className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 h-12 md:h-18"
+                    className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-snug"
                     initial={{ scale: 0.9, opacity: 0, filter: "blur(10px)" }}
                     animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
                     transition={{ duration: 0.8, delay: 0.1 }}
@@ -227,7 +227,7 @@ export default function VotingForm({
                             onClick={() => handleSelect(opt.id)}
                             disabled={hasVoted}
                             className={clsx(
-                                "group relative h-[350px] rounded-2xl overflow-hidden text-left transition-colors duration-300", // Quitamos transition-all de CSS para dejar a Framer trabajar
+                                "group relative h-[350px] rounded-2xl overflow-hidden text-left transition-colors duration-300 cursor-pointer", // Quitamos transition-all de CSS para dejar a Framer trabajar
                                 
                                 // Lógica Visual
                                 hasVoted 
@@ -315,7 +315,7 @@ export default function VotingForm({
                 <button
                     onClick={handleSubmit}
                     disabled={loading || (!hasVoted && selected.length === 0)}
-                    className="pointer-events-auto bg-white text-black px-12 py-4 rounded-full font-bold text-lg shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)] hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:shadow-none transition-all active:scale-95 flex items-center gap-3"
+                    className="pointer-events-auto bg-white text-black px-12 py-4 rounded-full font-bold text-lg shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)] hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:shadow-none transition-all active:scale-95 flex items-center gap-3 cursor-pointer"
                 >
                     {loading ? (
                         "Procesando..."

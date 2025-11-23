@@ -218,7 +218,7 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
                 <div className="p-6 border border-blue-500/20 bg-blue-500/5 rounded-2xl space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                            {currentEvent.isPublic ? '🌍 Enlace Público' : '🔒 Enlace Privado (Con Clave)'}
+                            {currentEvent.isPublic ? '🌍 Enlace Público' : '🔒 Enlace Privado'}
                         </h3>
                         {!currentEvent.isPublic && (
                             <button
@@ -260,7 +260,7 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
                     <div className="flex justify-between items-center">
                         <div>
                             <h3 className="text-sm font-bold text-red-400 uppercase tracking-wider flex items-center gap-2 mb-1">
-                                <AlertTriangle size={16} /> Zona de Peligro
+                                <AlertTriangle size={16} /> ELIMINAR EVENTO
                             </h3>
                             <p className="text-xs text-red-300/60">Esta acción es irreversible.</p>
                         </div>
