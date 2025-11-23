@@ -193,7 +193,7 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
                                         }
                                     }}
                                     disabled={!isPlus}
-                                    className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer disabled:cursor-not-allowed z-10 opacity-0 inset-0"
+                                    className="toggle-checkbox absolute block w-12 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer disabled:cursor-not-allowed z-10 opacity-0 inset-0"
                                 />
                                 <div className={`block overflow-hidden h-6 rounded-full transition-colors duration-300 ${currentEvent.isAnonymousVoting ? (isPlus ? 'bg-purple-600' : 'bg-gray-600') : 'bg-gray-700'}`}></div>
                                 <div className={`absolute left-0 top-0 bottom-0 w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-300 pointer-events-none ${currentEvent.isAnonymousVoting ? 'translate-x-6' : 'translate-x-0'}`}></div>

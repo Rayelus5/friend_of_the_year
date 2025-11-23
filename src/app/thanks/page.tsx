@@ -77,7 +77,7 @@ export default function ThanksPage() {
                             ¿Qué puedes hacer ahora?
                         </p>
                         <p className="text-xs md:text-sm text-gray-400">
-                            Puedes volver al inicio para seguir usando POLLNOW o visitar la página de sobre mí para conocer más sobre el proyecto.
+                            Puedes volver al inicio para seguir usando POLLNOW o visitar la página de about para conocer más sobre el proyecto.
                         </p>
                     </div>
 
