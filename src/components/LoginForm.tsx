@@ -1,51 +1,14 @@
 'use client';
 
-import { useState } from 'react'; // <--- CAMBIO
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useActionState } from 'react';
+import { authenticateCredentials } from '@/app/lib/auth-actions'; // Importamos del archivo unificado
 
 export default function LoginForm() {
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
-
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
-        setError(null);
-        setIsLoading(true);
-
-        const form = new FormData(e.currentTarget);
-        const email = String(form.get('email') ?? '').trim();
-        const password = String(form.get('password') ?? '');
-
-        if (!email || !password) {
-            setError('Rellena email y contraseña.');
-            setIsLoading(false);
-            return;
-        }
-
-        // signIn del cliente: mandamos las credentials de forma que NextAuth las entienda
-        const res = await signIn('credentials', {
-            redirect: false, // manejamos la redirección manualmente
-            email,
-            password
-        } as any);
-
-        setIsLoading(false);
-
-        if (res?.error) {
-            setError(res.error || 'Credenciales inválidas');
-            return;
-        }
-
-        // éxito -> redirigir a dashboard
-        router.push('/dashboard/profile');
-        // actualizar logeado
-        router.refresh();
-    }
+    // Usamos el hook moderno de React 19 / Next 15
+    const [errorMessage, dispatch, isPending] = useActionState(authenticateCredentials, undefined);
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form action={dispatch} className="space-y-6">
 
             <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">
@@ -76,21 +39,22 @@ export default function LoginForm() {
                 />
             </div>
 
-            {error && (
+            {/* Mensaje de Error del Servidor */}
+            {errorMessage && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-red-400 text-sm animate-in fade-in slide-in-from-top-1">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p>{error}</p>
+                    <p>{errorMessage}</p>
                 </div>
             )}
 
             <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-600 to-sky-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                disabled={isPending}
+                className="w-full bg-gradient-to-r from-blue-600 to-sky-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-                {isLoading ? 'Entrando...' : 'Iniciar Sesión'}
+                {isPending ? 'Entrando...' : 'Iniciar Sesión'}
             </button>
         </form>
     );

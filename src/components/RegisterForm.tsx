@@ -98,10 +98,6 @@ export default function RegisterForm() {
             >
                 {isPending ? 'Creando cuenta...' : 'Registrarse Gratis'}
             </button>
-
-            <p className="text-center text-gray-500 text-sm pt-2">
-                ¿Ya tienes cuenta? <Link href="/login" className="text-blue-500 hover:underline font-bold">Inicia Sesión</Link>
-            </p>
         </form>
     );
 }
