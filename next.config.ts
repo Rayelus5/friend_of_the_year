@@ -29,6 +29,12 @@ const nextConfig = {
         port: '',
         pathname: '/**', // Permitir cualquier ruta dentro de este dominio
       },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
