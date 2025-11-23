@@ -58,7 +58,7 @@ export default function AboutPage() {
                     </motion.h1>
 
                     <motion.p variants={fadeInUp} className="text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto">
-                        FOTY nació de una necesidad simple: poner fin a las discusiones sobre quién llegó más tarde o quién contó el peor chiste. Lo que empezó como una broma interna, hoy es la plataforma definitiva para celebrar la amistad.
+                        POLLNOW nació de una necesidad simple: poner fin a las discusiones sobre quién llegó más tarde o quién contó el peor chiste. Lo que empezó como una broma interna, hoy es la plataforma definitiva para celebrar la amistad.
                     </motion.p>
                 </motion.div>
             </section>
@@ -142,7 +142,7 @@ export default function AboutPage() {
                         viewport={{ once: true }}
                         className="text-center mb-16"
                     >
-                        <h2 className="text-4xl font-bold mb-4">El Futuro de FOTY</h2>
+                        <h2 className="text-4xl font-bold mb-4">El Futuro de POLLNOW</h2>
                         <p className="text-gray-400">Esto es solo el principio. Novedades que llegarán pronto.</p>
                     </motion.div>
 
@@ -172,8 +172,8 @@ export default function AboutPage() {
                         {/* Card 4 */}
                         <RoadmapCard
                             icon={<Heart className="text-red-400" />}
-                            title="FOTY Charity"
-                            desc="Donaciones integradas para causas benéficas con los votos."
+                            title="POLLNOW Likes"
+                            desc="Sistema de Me gusta para eventos públicos. Valoraciones de la gala entre otras cosas."
                             status="Concepto"
                             colSpan="md:col-span-2"
                         />
