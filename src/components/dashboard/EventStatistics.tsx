@@ -105,16 +105,18 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                     />
                 </div>
 
+                
                 <div className="grid lg:grid-cols-2 gap-8">
                     {/* 2. GRÁFICO BARRAS */}
-                    <div className="bg-neutral-900/50 border border-white/10 rounded-2xl p-8">
+                    
+                    <div className="bg-neutral-900/50 border border-white/10 rounded-2xl p-8 flex flex-col max-h-[400px] cursor-grab">
                         <h3 className="text-lg font-bold text-white mb-6">Rendimiento General</h3>
-                        <div className="space-y-4">
-                            {displayStats.votesByPoll.slice(0, 5).map((item, idx) => (
+                        <div className="overflow-y-auto space-y-4">
+                            {displayStats.votesByPoll.map((item, idx) => (
                                 <div key={idx} className="group">
                                     <div className="flex justify-between text-sm mb-1">
                                         <span className="text-gray-300">{item.name}</span>
-                                        <span className="text-gray-500 font-mono">{item.votes}</span>
+                                        <span className="text-gray-500 font-mono mr-3">{item.votes} votos</span>
                                     </div>
                                     <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
                                         <div
@@ -133,7 +135,7 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                             <h3 className="text-lg font-bold text-white">Desglose por Categoría</h3>
                             {!isPlus && !isFree && (
                                 <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-1 rounded border border-purple-500/30">
-                                    Upgrade a Plus para ver nombres
+                                    Mejora a Unlimited para ver usuarios
                                 </span>
                             )}
                         </div>
@@ -147,7 +149,7 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                         // Seleccionar por defecto la opción ganadora
                                         if (poll.options.length > 0) setSelectedOptionId(poll.options[0].id);
                                     }}
-                                    className="w-full text-left p-4 rounded-xl bg-black/40 border border-white/5 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group flex justify-between items-center"
+                                    className="w-full text-left p-4 rounded-xl bg-black/40 border border-white/10 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group flex justify-between items-center cursor-pointer"
                                 >
                                     <div>
                                         <p className="font-bold text-gray-200 text-sm group-hover:text-white">{poll.title}</p>
@@ -175,7 +177,7 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-neutral-900 border border-white/10 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                            className="bg-neutral-900 border border-white/10 w-full max-w-4xl max-h-[80vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header Modal */}
@@ -188,7 +190,7 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                             : "Identidades ocultas (Modo Anónimo o Plan insuficiente)"}
                                     </p>
                                 </div>
-                                <button onClick={() => setSelectedPoll(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <button onClick={() => setSelectedPoll(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer">
                                     <X className="text-gray-400" />
                                 </button>
                             </div>
@@ -202,7 +204,7 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                             key={opt.id}
                                             onClick={() => setSelectedOptionId(opt.id)}
                                             className={clsx(
-                                                "w-full p-3 rounded-xl flex items-center gap-3 transition-all",
+                                                "w-full p-3 rounded-xl flex items-center gap-3 transition-all cursor-pointer",
                                                 selectedOptionId === opt.id
                                                     ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
                                                     : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200"
@@ -248,7 +250,7 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                             ) : (
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                                     {selectedPoll.options.find(o => o.id === selectedOptionId)?.voters.map((voter, i) => (
-                                                        <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                                                        <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 cursor-pointer">
                                                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
                                                                 {voter.image ? (
                                                                     <Image src={voter.image} alt="" width={32} height={32} />

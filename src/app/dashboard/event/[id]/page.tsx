@@ -80,7 +80,7 @@ export default async function EventDashboardPage({ params }: Props) {
                                 <UsersRound className="w-6 h-6 text-gray-400" />
                                 <h2 className="text-xl font-bold">Participantes del Evento</h2>
                             </div>
-                            <ParticipantList initialData={event.participants} eventId={event.id} />
+                            <ParticipantList initialData={event.participants} eventId={event.id} planSlug={plan.slug}/>
                         </div>
                     }
 
@@ -91,7 +91,7 @@ export default async function EventDashboardPage({ params }: Props) {
                                 <Folders className="w-6 h-6 text-gray-400" />
                                 <h2 className="text-xl font-bold">Categorías del Evento</h2>
                             </div>
-                            <PollList initialPolls={event.polls} allParticipants={event.participants} eventId={event.id} />
+                            <PollList initialPolls={event.polls} allParticipants={event.participants} eventId={event.id} planSlug={plan.slug}/>
                         </div>
                     }
                 />
