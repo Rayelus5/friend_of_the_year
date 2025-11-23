@@ -30,8 +30,9 @@ export async function createEvent(formData: FormData) {
     // 2. Preparar datos
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
+    const tags = formData.get('tags') as string;
     // Generar Slug único
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 10000);
+    const slug = title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '-' + Math.floor(Math.random() * 10000);
 
     // Calculamos la fecha actual + 2 días
     const defaultGalaDate = new Date();
@@ -43,6 +44,7 @@ export async function createEvent(formData: FormData) {
             data: {
                 title,
                 description,
+                tags: tags.split(',').map(tag => tag.trim()),
                 slug,
                 userId: session.user.id,
                 isPublic: false,

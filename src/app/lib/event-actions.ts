@@ -10,7 +10,7 @@ import { z } from "zod";
 const titleSchema = z.string()
     .min(3, "El título es muy corto")
     .max(50, "El título es muy largo")
-    .regex(/^[a-zA-Z0-9\s\-_ñÑáéíóúÁÉÍÓÚ]+$/, "El título solo puede contener letras y números");
+    .regex(/^[\w\s\-\.,:;!¡?¿'()áéíóúÁÉÍÓÚñÑüÜ]+$/, "El título contiene caracteres no permitidos.");
 
 // --- EVENTO PRINCIPAL ---
 
