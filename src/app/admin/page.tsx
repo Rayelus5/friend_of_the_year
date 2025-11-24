@@ -1,80 +1,66 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { Users, Calendar, CheckSquare } from "lucide-react";
 import Link from "next/link";
-import {
-    Users,
-    Calendar,
-    CheckSquare,
-    ShieldAlert,
-    LogOut,
-    LayoutDashboard
-} from "lucide-react";
 
-export default async function AdminLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    const session = await auth();
+export const dynamic = "force-dynamic";
 
-    // Verificación de servidor por si el middleware falla
-    if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MODERATOR')) {
-        redirect("/login");
-    }
+export default async function AdminDashboardPage() {
+    // Obtener contadores rápidos
+    const userCount = await prisma.user.count();
+    const eventCount = await prisma.event.count();
+    const pendingReviews = await prisma.event.count({ where: { status: 'PENDING' } });
 
     return (
-        <div className="min-h-screen bg-neutral-950 text-white flex font-sans">
+        <div className="max-w-6xl mx-auto">
+            <header className="mb-8">
+                <h1 className="text-3xl font-bold text-white">Panel de Control</h1>
+                <p className="text-gray-400">Bienvenido al centro de mando de POLLNOW.</p>
+            </header>
 
-            {/* SIDEBAR */}
-            <aside className="w-64 bg-black border-r border-white/10 flex flex-col fixed h-full z-50">
-                <div className="p-6 border-b border-white/10 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center font-bold text-white">A</div>
-                    <h1 className="font-bold tracking-wider">ADMIN <span className="text-xs text-gray-500 font-normal block">Panel</span></h1>
+            {/* KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <KpiCard
+                    title="Usuarios Totales"
+                    value={userCount}
+                    icon={<Users className="text-blue-500" />}
+                    href="/admin/users"
+                />
+                <KpiCard
+                    title="Eventos Creados"
+                    value={eventCount}
+                    icon={<Calendar className="text-purple-500" />}
+                    href="/admin/events"
+                />
+                <KpiCard
+                    title="Pendientes de Revisión"
+                    value={pendingReviews}
+                    icon={<CheckSquare className="text-amber-500" />}
+                    href="/admin/review"
+                    alert={pendingReviews > 0}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Aquí pondremos gráficas o listas recientes en el futuro */}
+                <div className="p-6 bg-neutral-900 border border-white/10 rounded-xl min-h-[200px] flex flex-col items-center justify-center text-gray-500">
+                    <p>Gráfico de actividad (Próximamente)</p>
                 </div>
-
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-
-                    <p className="px-3 text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 mt-4">Moderación</p>
-
-                    <NavLink href="/admin/reviews" icon={<CheckSquare size={18} />} label="Solicitudes" activeColor="text-amber-400" />
-                    <NavLink href="/admin/reports" icon={<ShieldAlert size={18} />} label="Reportes" />
-
-                    <p className="px-3 text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 mt-6">Gestión</p>
-
-                    <NavLink href="/admin/users" icon={<Users size={18} />} label="Usuarios" />
-                    <NavLink href="/admin/events" icon={<Calendar size={18} />} label="Eventos" />
-
-                </nav>
-
-                <div className="p-4 border-t border-white/10">
-                    <div className="flex items-center gap-3 px-3 py-2 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center font-bold text-xs text-gray-400">
-                            {session.user.name?.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{session.user.name}</p>
-                            <p className="text-[10px] text-gray-500 uppercase">{session.user.role}</p>
-                        </div>
-                    </div>
-                    <Link href="/" className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                        <LogOut size={14} /> Volver al sitio
-                    </Link>
+                <div className="p-6 bg-neutral-900 border border-white/10 rounded-xl min-h-[200px] flex flex-col items-center justify-center text-gray-500">
+                    <p>Últimos registros (Próximamente)</p>
                 </div>
-            </aside>
-
-            {/* CONTENIDO */}
-            <main className="flex-1 ml-64 p-8 overflow-y-auto">
-                {children}
-            </main>
+            </div>
         </div>
     );
 }
 
-function NavLink({ href, icon, label, activeColor = "text-blue-400" }: any) {
+function KpiCard({ title, value, icon, href, alert }: any) {
     return (
-        <Link href={href} className={`flex items-center gap-3 px-3 py-2.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all group`}>
-            <span className={`group-hover:${activeColor} transition-colors`}>{icon}</span>
-            <span className="text-sm font-medium">{label}</span>
+        <Link href={href} className={`block p-6 bg-neutral-900 border rounded-xl transition-all hover:bg-neutral-800 ${alert ? 'border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.1)]' : 'border-white/10'}`}>
+            <div className="flex justify-between items-start mb-4">
+                <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider">{title}</h3>
+                <div className="p-2 bg-white/5 rounded-lg">{icon}</div>
+            </div>
+            <p className="text-4xl font-bold text-white">{value}</p>
         </Link>
     )
 }
