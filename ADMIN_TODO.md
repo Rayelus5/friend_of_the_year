@@ -2,7 +2,7 @@
 
 ## 0. Correcciones críticas previas
 
-- [ ] Permitir acceso ADMIN a cualquier dashboard de evento.
+- [x] Permitir acceso ADMIN a cualquier dashboard de evento.
 - [x] Asegurar rol en JWT/Session.
 
 ## 1. Flujo de Publicación de Eventos
@@ -13,15 +13,15 @@
 
 ## 2. Revisión de Eventos (ADMIN)
 
-- [ ] Completar /admin/reviews/page.tsx.
-- [ ] Crear /admin/reviews/[eventId]/page.tsx.
-- [ ] Aprobar / Denegar eventos.
+- [x] Completar /admin/reviews/page.tsx.
+- [x] Crear /admin/reviews/[eventId]/page.tsx.
+- [x] Aprobar / Denegar eventos.
 
 ## 3. Gestión Global de Eventos
 
-- [ ] Mejorar /admin/events/page.tsx.
-- [ ] Crear /admin/events/[eventId]/page.tsx.
-- [ ] Modo Impersonate.
+- [x] Mejorar /admin/events/page.tsx.
+- [x] Crear /admin/events/[eventId]/page.tsx.
+- [x] Modo Impersonate.
 
 ## 4. Gestión de Usuarios
 
@@ -103,10 +103,10 @@
 
 ### **2.1. Listado de revisiones**
 
-* [ ] Completar: `src/app/admin/reviews/page.tsx`
-* [ ] Listar eventos con `status = PENDING`
-* [ ] Botón **Aprobar** (`APPROVE_EVENT`)
-* [ ] Botón **Denegar** (`DENY_EVENT`) con campo **motivo**
+* [x] Completar: `src/app/admin/reviews/page.tsx`
+* [x] Listar eventos con `status = PENDING`
+* [x] Botón **Aprobar** (`APPROVE_EVENT`)
+* [x] Botón **Denegar** (`DENY_EVENT`) con campo **motivo**
 
   * Guardar motivo en `ModerationLog.details`
   * Cambiar `event.status = DENIED`
@@ -114,11 +114,11 @@
 
 ### **2.2. Vista de detalle de evento para el admin**
 
-* [ ] Crear: `src/app/admin/reviews/[eventId]/page.tsx`
-* [ ] Mostrar todos los datos del evento
-* [ ] Mostrar reportes asociados
-* [ ] Mostrar logs asociados
-* [ ] Acciones directas (aprobar, denegar, resetear votos, ocultar/publicar)
+* [x] Crear: `src/app/admin/reviews/[eventId]/page.tsx`
+* [x] Mostrar todos los datos del evento
+* [x] Mostrar reportes asociados
+* [x] Mostrar logs asociados
+* [x] Acciones directas (aprobar, denegar, resetear votos, ocultar/publicar)
 
 ---
 

@@ -103,11 +103,12 @@ model Session {
 }
 
 model VerificationToken {
-    identifier String
+    id         String   @id @default(uuid())
+    email      String
     token      String   @unique
     expires    DateTime
 
-    @@unique([identifier, token])
+    @@unique([email, token])
 }
 
 model PasswordResetToken {
@@ -134,8 +135,11 @@ model Event {
     status         EventStatus     @default(PENDING) // Estado de moderación (PENDING, APPROVED, DENIED)
     tags           String[]        // Etiquetas para búsqueda (ej: ["cine", "oscar", "fiesta"])
     galaDate       DateTime        // Fecha de la celebración o fin del evento
+    isAnonymousVoting Boolean       @default(true)
     createdAt      DateTime        @default(now())
     updatedAt      DateTime        @updatedAt
+
+    reviewReason    String?
 
     // Relaciones
     user           User            @relation(fields: [userId], references: [id])
@@ -168,7 +172,6 @@ model Poll {
     eventId       String
     title         String     @db.VarChar(100)
     description   String?    @db.Text
-    endAt         DateTime
     votingType    VotingType @default(SINGLE)
     maxOptions    Int        @default(1) // Solo aplica a LIMITED_MULTIPLE
     isPublished   Boolean    @default(false)
@@ -278,6 +281,7 @@ model Notification {
     isRead      Boolean  @default(false)
     createdAt   DateTime @default(now())
     adminUserId String   // A qué administrador va dirigida
+    userId      String?
 
     admin User @relation(fields: [adminUserId], references: [id])
 

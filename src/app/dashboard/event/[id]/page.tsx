@@ -21,6 +21,8 @@ export default async function EventDashboardPage({ params }: Props) {
 
     if (!session?.user) redirect("/login");
 
+    const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'MODERATOR';
+
     // 1. Buscar evento
     const event = await prisma.event.findUnique({
         where: { id },
@@ -36,7 +38,12 @@ export default async function EventDashboardPage({ params }: Props) {
         }
     });
 
-    if (!event || event.userId !== session.user.id) notFound();
+    // CAMBIO EN LA LÓGICA DE SEGURIDAD:
+    // Si no existe -> 404
+    // Si existe PERO no es dueño Y no es admin -> 404
+    if (!event || (event.userId !== session.user.id && !isAdmin)) {
+        notFound();
+    }
 
     // 2. Obtener usuario y plan
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });

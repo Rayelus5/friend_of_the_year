@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateEvent, deleteEvent, rotateEventKey } from "@/app/lib/event-actions";
 import { Save, Trash2, AlertTriangle, RefreshCw, Copy, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -63,9 +63,18 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
     // --- USAMOS EL HELPER AQUÍ PARA QUE EL INPUT MUESTRE LA HORA REAL ---
     const defaultDate = formatLocalDatetime(currentEvent.galaDate);
 
+     // NUEVO: origin estable entre SSR y 1er render
+    const [origin, setOrigin] = useState("");
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setOrigin(window.location.origin);
+        }
+    }, []);
+
     const handleCopy = async () => {
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const shareUrl = `${origin}/e/${event.slug}${!currentEvent.isPublic ? `?key=${event.accessKey}` : ''}`;
+        const shareUrl = `${origin}/e/${event.slug}${
+        !currentEvent.isPublic ? `?key=${event.accessKey}` : ""
+        }`;
         
         await navigator.clipboard.writeText(shareUrl);
         setCopied(true);
@@ -116,7 +125,6 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
         setIsRegenerating(false);
     };
 
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const shareUrl = `${origin}/e/${event.slug}${!currentEvent.isPublic ? `?key=${event.accessKey}` : ''}`;
 
     return (

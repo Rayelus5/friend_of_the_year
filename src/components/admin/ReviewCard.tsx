@@ -38,7 +38,7 @@ export default function ReviewCard({ event }: { event: any }) {
                     <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-bold text-white">{event.title}</h3>
                         <Link 
-                            href={`/e/${event.slug}`} 
+                            href={`/admin/reviews/${event.id}`} 
                             target="_blank"
                             className="text-blue-400 hover:text-blue-300 bg-blue-500/10 p-1.5 rounded-md transition-colors"
                             title="Ver página pública"
