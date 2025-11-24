@@ -4,26 +4,29 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-// Helper de seguridad
-async function checkAdmin() {
+// Helper para verificar permisos de admin
+async function checkAdminPermissions() {
     const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'MODERATOR')) {
-        throw new Error("Unauthorized");
+    // @ts-ignore
+    const role = session?.user?.role;
+
+    if (!session || (role !== 'ADMIN' && role !== 'MODERATOR')) {
+        throw new Error("Acceso denegado: Se requieren permisos de administrador.");
     }
-    return session;
+    return session.user;
 }
 
-// --- MODERACIÓN DE EVENTOS ---
+// --- GESTIÓN DE EVENTOS (REVISIÓN) ---
 
 export async function approveEvent(eventId: string) {
-    const session = await checkAdmin();
+    const admin = await checkAdminPermissions();
 
     const event = await prisma.event.update({
         where: { id: eventId },
-        data: { 
-            status: 'APPROVED', 
-            isPublic: true, // Publicamos automáticamente al aprobar
-            reviewReason: null // Limpiamos motivos anteriores
+        data: {
+            status: 'APPROVED',
+            isPublic: true, // Al aprobar, se hace público automáticamente
+            reviewReason: null // Limpiamos cualquier motivo de rechazo previo
         },
         include: { user: true }
     });
@@ -32,36 +35,37 @@ export async function approveEvent(eventId: string) {
     await prisma.notification.create({
         data: {
             userId: event.userId,
-            adminUserId: session.user.id,
-            message: `¡Buenas noticias! Tu evento "${event.title}" ha sido aprobado y ya es público.`,
+            adminUserId: admin.id!,
+            message: `✅ Tu evento "${event.title}" ha sido aprobado y publicado en el directorio.`,
             link: `/dashboard/event/${event.id}`,
             isRead: false
         }
     });
 
     revalidatePath('/admin/reviews');
-    revalidatePath('/polls'); // Actualizar buscador público
+    revalidatePath('/polls'); // Actualizar el explorador público
 }
 
 export async function rejectEvent(eventId: string, reason: string) {
-    const session = await checkAdmin();
+    const admin = await checkAdminPermissions();
 
     const event = await prisma.event.update({
         where: { id: eventId },
-        data: { 
-            status: 'DENIED', 
+        data: {
+            status: 'DENIED',
             isPublic: false,
             reviewReason: reason
-        }
+        },
+        include: { user: true }
     });
 
-    // Crear notificación
+    // Notificar al usuario con el motivo
     await prisma.notification.create({
         data: {
             userId: event.userId,
-            adminUserId: session.user.id,
-            message: `Tu solicitud para publicar "${event.title}" ha sido rechazada. Motivo: ${reason}`,
-            link: `/dashboard/event/${event.id}`, // En el dashboard verá el motivo
+            adminUserId: admin.id!,
+            message: `⚠️ Tu evento "${event.title}" ha sido rechazado. Motivo: ${reason}`,
+            link: `/dashboard/event/${event.id}`,
             isRead: false
         }
     });
@@ -71,16 +75,16 @@ export async function rejectEvent(eventId: string, reason: string) {
 
 // --- GESTIÓN DE USUARIOS ---
 
-export async function toggleUserBan(userId: string) {
-    await checkAdmin();
-    
+export async function toggleIpBan(userId: string) {
+    await checkAdminPermissions();
+
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
     await prisma.user.update({
         where: { id: userId },
-        data: { ipBan: !user.ipBan } // Toggle ban
+        data: { ipBan: !user.ipBan }
     });
-    
+
     revalidatePath('/admin/users');
 }
