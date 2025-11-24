@@ -52,7 +52,7 @@ export default auth(async (req) => {
         }
 
         // B. Segundo: ¿Tiene el rol adecuado?
-        if (userRole !== 'ADMIN' && userRole !== 'MODERATOR') {
+        if (userRole !== 'ADMIN' || userRole !== 'MODERATOR') {
             return NextResponse.redirect(new URL('/dashboard', req.url));
         }
 
