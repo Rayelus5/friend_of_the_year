@@ -9,11 +9,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: "2024-12-18.acacia" as any,
 });
 
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
+export const runtime = "nodejs";       // Para poder usar Buffer, Stripe SDK, etc.
+export const dynamic = "force-dynamic"; // Que no intente cachear este endpoint
+
 
 export async function POST(req: Request) {
     const headersList = await headers();
