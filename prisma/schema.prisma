@@ -29,6 +29,14 @@ enum VotingType {
     LIMITED_MULTIPLE
 }
 
+enum ReportReason {
+    SPAM
+    INAPPROPRIATE_CONTENT
+    HARASSMENT
+    SCAM
+    OTHER
+}
+
 // ===================================
 // MODELOS DE USUARIO Y CUENTA
 // ===================================
@@ -52,13 +60,16 @@ model User {
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
 
+    // Relaciones
     accounts             Account[]
     events               Event[]
     sessions             Session[]
     votes                Vote[]            @relation(name: "UserVotes")
-    notifications        Notification[]    // Relación para notificaciones (ej: para admins)
-    supportChats         SupportChat[]     @relation(name: "UserSupportChats") // Chats iniciados por el usuario
-    messages             ChatMessage[]     @relation(name: "UserChatMessages") // Mensajes enviados por el usuario
+    notifications        Notification[]
+    supportChats         SupportChat[]     @relation(name: "UserSupportChats")
+    chatMessages         ChatMessage[]     @relation(name: "UserChatMessages")
+    moderationLogs       ModerationLog[]   @relation(name: "AdminActions")
+    reports              Report[]          @relation(name: "UserReports")
 }
 
 model Account {
@@ -67,16 +78,18 @@ model Account {
     type              String
     provider          String
     providerAccountId String
-    refresh_token     String?
-    access_token      String?
+    refresh_token     String? @db.Text
+    access_token      String? @db.Text
     expires_at        Int?
     token_type        String?
     scope             String?
-    id_token          String?
+    id_token          String? @db.Text
     session_state     String?
-    user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@unique([provider, providerAccountId])
+    @@index([userId])
 }
 
 model Session {
@@ -85,102 +98,16 @@ model Session {
     userId       String
     expires      DateTime
     user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
 
-// ===================================
-// MODELO DE EVENTOS Y RELACIONES
-// ===================================
-
-model Event {
-    id                String          @id @default(uuid())
-    slug              String          @unique
-    title             String
-    description       String?
-    isPublic          Boolean         @default(false)
-    status            EventStatus     @default(PENDING) // Nuevo: Estado de revisión
-    reviewReason      String?         // Nuevo: Motivo de rechazo por admin
-    tags              String[]
-    galaDate          DateTime        @default(now())
-    isAnonymousVoting Boolean         @default(true)
-    createdAt         DateTime        @default(now())
-    updatedAt         DateTime        @updatedAt
-    userId            String
-    accessKey         String          @default(uuid())
-    user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-    participants      Participant[]
-    polls             Poll[]
-}
-
-model Participant {
-    id          String      @id @default(uuid())
-    name        String
-    imageUrl    String?
-    eventId     String
-    createdAt   DateTime    @default(now())
-    nominations Option[]
-    event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-    @@index([eventId])
-}
-
-model Poll {
-    id          String      @id @default(uuid())
-    title       String
-    description String?
-    votingType  VotingType  @default(SINGLE)
-    maxChoices  Int?
-    order       Int         @default(0)
-    eventId     String
-    isPublished Boolean     @default(true)
-    endAt       DateTime?
-    options     Option[]
-    event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-    votes       Vote[]
-
-    @@index([eventId])
-}
-
-model Option {
-    id            String       @id @default(uuid())
-    pollId        String
-    subtitle      String?
-    participantId String
-    order         Int          @default(0)
-    participant   Participant  @relation(fields: [participantId], references: [id], onDelete: Cascade)
-    poll          Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
-    votes         VoteOption[]
-
-    @@unique([pollId, participantId])
-}
-
-model Vote {
-    id          String       @id @default(uuid())
-    pollId      String
-    createdAt   DateTime     @default(now())
-    voterHash   String
-    userId      String
-    user        User         @relation(name: "UserVotes", fields: [userId], references: [id])
-    poll        Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
-    voteOptions VoteOption[]
-
-    @@unique([pollId, voterHash])
-}
-
-model VoteOption {
-    id       String @id @default(uuid())
-    voteId   String
-    optionId String
-    option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
-    vote     Vote   @relation(fields: [voteId], references: [id], onDelete: Cascade)
+    @@index([userId])
 }
 
 model VerificationToken {
-    id       String   @id @default(uuid())
-    email    String
-    token    String   @unique
-    expires  DateTime
+    identifier String
+    token      String   @unique
+    expires    DateTime
 
-    @@unique([email, token])
+    @@unique([identifier, token])
 }
 
 model PasswordResetToken {
@@ -193,8 +120,156 @@ model PasswordResetToken {
 }
 
 // ===================================
-// MODELOS DE MODERACIÓN Y SOPORTE (Nuevos)
+// MODELOS DE EVENTOS Y VOTACIONES
 // ===================================
+
+model Event {
+    id             String          @id @default(uuid())
+    userId         String          // Creador del evento
+    title          String          @db.VarChar(100)
+    description    String          @db.Text
+    slug           String          @unique // URL amigable (ej: mejor-pelicula-2024)
+    accessKey      String          @unique @default(uuid()) // Clave privada para administrar (aparte de userId)
+    isPublic       Boolean         @default(false) // Si es visible en la página principal
+    status         EventStatus     @default(PENDING) // Estado de moderación (PENDING, APPROVED, DENIED)
+    tags           String[]        // Etiquetas para búsqueda (ej: ["cine", "oscar", "fiesta"])
+    galaDate       DateTime        // Fecha de la celebración o fin del evento
+    createdAt      DateTime        @default(now())
+    updatedAt      DateTime        @updatedAt
+
+    // Relaciones
+    user           User            @relation(fields: [userId], references: [id])
+    participants   Participant[]
+    polls          Poll[]
+    reports        Report[]
+    moderationLogs ModerationLog[]
+
+    @@index([userId])
+    @@index([slug])
+    @@index([status])
+}
+
+model Participant {
+    id          String   @id @default(uuid())
+    name        String   @db.VarChar(100)
+    imageUrl    String?  @db.Text
+    eventId     String
+    createdAt   DateTime @default(now())
+
+    // Relaciones
+    nominations Option[]
+    event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+    @@index([eventId])
+}
+
+model Poll {
+    id            String     @id @default(uuid())
+    eventId       String
+    title         String     @db.VarChar(100)
+    description   String?    @db.Text
+    endAt         DateTime
+    votingType    VotingType @default(SINGLE)
+    maxOptions    Int        @default(1) // Solo aplica a LIMITED_MULTIPLE
+    isPublished   Boolean    @default(false)
+    order         Int        @default(0)
+    createdAt     DateTime   @default(now())
+    updatedAt     DateTime   @updatedAt
+
+    // Relaciones
+    event         Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    options       Option[]
+    votes         Vote[]
+
+    @@index([eventId])
+}
+
+model Option {
+    id            String       @id @default(uuid())
+    pollId        String
+    subtitle      String?      @db.VarChar(100) // Título del premio/categoría si la opción es un participante
+    participantId String       // El participante nominado
+    order         Int          @default(0)
+
+    // Relaciones
+    participant   Participant  @relation(fields: [participantId], references: [id], onDelete: Cascade)
+    poll          Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
+    votes         VoteOption[]
+
+    @@unique([pollId, participantId])
+}
+
+model Vote {
+    id          String       @id @default(uuid())
+    pollId      String
+    createdAt   DateTime     @default(now())
+    voterHash   String       // Hash de la cookie o IP del votante (si no está logeado)
+    userId      String?      // ID del usuario logeado (si está logeado)
+    user        User?        @relation(name: "UserVotes", fields: [userId], references: [id])
+    poll        Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
+    voteOptions VoteOption[]
+
+    @@unique([pollId, voterHash])
+    @@index([userId])
+}
+
+model VoteOption {
+    id       String @id @default(uuid())
+    voteId   String
+    optionId String
+
+    // Relaciones
+    option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
+    vote     Vote   @relation(fields: [voteId], references: [id], onDelete: Cascade)
+
+    @@unique([voteId, optionId])
+}
+
+// ===================================
+// MODELOS DE MODERACIÓN Y SOPORTE
+// ===================================
+
+// NUEVO: Modelo para registrar reportes de usuarios sobre eventos
+model Report {
+    id          String       @id @default(uuid())
+    reporterId  String       // Usuario que reporta
+    eventId     String       // Evento reportado
+    reason      ReportReason // Razón del reporte (enum)
+    details     String       @db.Text
+    isReviewed  Boolean      @default(false)
+    createdAt   DateTime     @default(now())
+    reviewedAt  DateTime?
+
+    // Relaciones
+    reporter    User         @relation(name: "UserReports", fields: [reporterId], references: [id])
+    event       Event        @relation(fields: [eventId], references: [id])
+
+    @@index([eventId])
+    @@index([reporterId])
+    @@index([isReviewed])
+}
+
+// NUEVO: Historial de acciones tomadas por el admin/moderador
+model ModerationLog {
+    id            String   @id @default(uuid())
+    adminId       String   // Administrador que realiza la acción
+    actionType    String   // Tipo de acción (ej: 'APPROVE_EVENT', 'DENY_EVENT', 'BAN_USER', 'RESET_VOTES')
+    targetType    String   // Tipo de entidad afectada (ej: 'EVENT', 'USER')
+    targetId      String   // ID de la entidad afectada
+    details       String?  @db.Text // Detalles o razón de la acción
+    createdAt     DateTime @default(now())
+
+    // Relaciones
+    admin         User     @relation(name: "AdminActions", fields: [adminId], references: [id])
+    // Relación opcional con el Evento, útil para búsquedas rápidas en la tabla de Eventos
+    eventId       String?
+    event         Event?   @relation(fields: [eventId], references: [id])
+
+    @@index([adminId])
+    @@index([targetId])
+    @@index([eventId])
+}
+
 
 model Notification {
     id          String   @id @default(uuid())
@@ -226,7 +301,7 @@ model SupportChat {
 model ChatMessage {
     id        String   @id @default(uuid())
     chatId    String
-    senderId  String   // userId o adminId
+    senderId  String   // userId o adminId (asumimos que si no es userId, es adminId, pero el senderId tiene que ser un ID de la tabla User)
     content   String
     createdAt DateTime @default(now())
 
