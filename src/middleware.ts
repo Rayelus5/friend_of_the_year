@@ -6,7 +6,7 @@ import { MAINTENANCE_MODE } from "@/lib/config";
 const { auth } = NextAuth(authConfig);
 
 // Lista de IPs permitidas para acceder al panel de admin (separadas por comas en .env)
-const ADMIN_IPS = process.env.ADMIN_IP_WHITELIST?.split(',') || [];
+// const ADMIN_IPS = process.env.ADMIN_IP_WHITELIST?.split(',') || [];
 
 export default auth(async (req) => {
     const { nextUrl } = req;
@@ -17,14 +17,14 @@ export default auth(async (req) => {
     
     // Obtener IP real del cliente (compatible con Vercel/Proxies)
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
-    const isLocal = ip === '127.0.0.1' || ip === '::1';
+    // const isLocal = ip === '127.0.0.1' || ip === '::1';
 
-    console.log('MIDDLEWARE DEBUG', {
-        path: nextUrl.pathname,
-        isLoggedIn,
-        authUser: req.auth?.user,
-        userRole,
-    });
+    // console.log('MIDDLEWARE DEBUG', {
+    //     path: nextUrl.pathname,
+    //     isLoggedIn,
+    //     authUser: req.auth?.user,
+    //     userRole,
+    // });
 
     // ---------------------------------------------------------
     // 1. MODO MANTENIMIENTO (Prioridad Absoluta)
@@ -68,10 +68,10 @@ export default auth(async (req) => {
         //&& userRole !== 'MODERATOR'
 
         // C. Tercero: ¿Es una IP permitida? (Solo si hay lista blanca definida)
-        if (ADMIN_IPS.length > 0 && !ADMIN_IPS.includes(ip) && !isLocal) {
-             // Si no es IP válida y no es local, 404 falso por seguridad
-             return NextResponse.rewrite(new URL('/404', req.url));
-        }
+        // if (ADMIN_IPS.length > 0 && !ADMIN_IPS.includes(ip) && !isLocal) {
+        //      // Si no es IP válida y no es local, 404 falso por seguridad
+        //      return NextResponse.rewrite(new URL('/404', req.url));
+        // }
     }
 
     // ---------------------------------------------------------
