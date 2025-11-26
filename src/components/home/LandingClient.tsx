@@ -185,7 +185,7 @@ export default function LandingClient( { session } : { session: any } ) {
 
                     {/* Descripción */}
                     <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-400 max-w-2xl mb-10 leading-relaxed">
-                        POLLNOW es la plataforma definitiva para organizar votaciones épicas entre amigos, comunidades o eventos. Diseño premium, 100% anónimo y con modo "Gala".
+                        POLLNOW es la plataforma definitiva para organizar votaciones épicas entre amigos, comunidades o eventos. Diseño premium, votos anónimos por defecto y con modo "Gala".
                     </motion.p>
 
                     {/* Botones */}
@@ -220,7 +220,7 @@ export default function LandingClient( { session } : { session: any } ) {
                     
                     <motion.div
                         variants={itemVariants}
-                        className="mt-20 relative w-full max-w-5xl aspect-video rounded-3xl border border-white/10 bg-black overflow-hidden z-10 [perspective:1400px]"
+                        className="hidden lg:flex mt-20 relative w-full max-w-5xl aspect-video rounded-3xl border border-white/10 bg-black overflow-hidden z-10 [perspective:1400px]"
                     >
                         {/* Glow muy suave de fondo */}
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_60%),radial-gradient(circle_at_bottom,_rgba(14,165,233,0.2),_transparent_55%)] opacity-80" />
