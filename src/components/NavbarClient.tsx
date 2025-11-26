@@ -112,8 +112,8 @@ export default function NavbarClient({ user }: NavbarProps) {
                         {/* Enlaces de Navegación */}
                         <div className="flex flex-col space-y-2">
                             <MobileNavLink href="/" icon={<Home size={18} />} onClick={closeMenu}>Home</MobileNavLink>
+                            <MobileNavLink href="/polls" icon={<Vote size={18} />} onClick={closeMenu}>Events</MobileNavLink>
                             <MobileNavLink href="/dashboard" icon={<LayoutDashboard size={18} />} onClick={closeMenu}>Dashboard</MobileNavLink>
-                            <MobileNavLink href="/polls" icon={<Vote size={18} />} onClick={closeMenu}>Polls</MobileNavLink>
                             <MobileNavLink href="/premium" icon={<Sparkles size={18} className="text-indigo-400" />} onClick={closeMenu}>
                                 <span className="text-indigo-400">Premium</span>
                             </MobileNavLink>

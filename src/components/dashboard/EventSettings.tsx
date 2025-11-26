@@ -195,7 +195,7 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
                                             'text-gray-400 bg-gray-700/30'
                                     }`}>
                                     {isPending ? 'En Revisión' :
-                                        isApproved ? 'Aprovado' :
+                                        isApproved ? 'Aprobado' :
                                             isDenied ? 'Rechazado' : 'Borrador'}
                                 </span>
                             </h3>
