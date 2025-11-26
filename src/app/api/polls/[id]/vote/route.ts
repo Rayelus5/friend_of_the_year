@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: Props) {
 
         // 1. Identificación (Híbrida: Cookie + Sesión)
         const cookieStore = await cookies();
-        const voterId = cookieStore.get('foty_voter_id')?.value;
+        const voterId = cookieStore.get('voter_id')?.value;
 
         // Intentamos obtener sesión de usuario real
         const session = await auth();
