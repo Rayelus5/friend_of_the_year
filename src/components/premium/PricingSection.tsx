@@ -25,7 +25,7 @@ const PRICING_DATA = [
         price: "4.99€",
         period: "/mes",
         description: "Para grupos de amigos activos.",
-        features: ["5 Eventos Activos", "10 Categorías máximo por evento", "30 Participantes máximo por evento", "Estadísticas básicas", "Todo lo de Free"],
+        features: ["5 Eventos Activos", "10 Categorías máximo por evento", "30 Participantes máximo por evento", "Generación de imágenes con IA","Estadísticas básicas", "Soporte prioritario", "Todo lo de Free"],
         priceId: PLANS.PREMIUM.priceId,
         highlight: true
     },
