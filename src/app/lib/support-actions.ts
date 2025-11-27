@@ -170,3 +170,51 @@ export async function closeChat(chatId: string) {
 
     return { chat };
 }
+
+// Reabrir chat (admin / moderador)
+export async function reopenChat(chatId: string) {
+    const session = await auth();
+    if (!session?.user) return { error: "No autorizado" };
+
+    const isAdminOrMod =
+        session.user.role === "ADMIN" || session.user.role === "MODERATOR";
+
+    if (!isAdminOrMod) {
+        return { error: "Solo admins o moderadores" };
+    }
+
+    const chat = await prisma.supportChat.update({
+        where: { id: chatId },
+        data: { isClosed: false },
+        select: { id: true, isClosed: true },
+    });
+
+    revalidatePath("/admin/chats");
+    revalidatePath(`/admin/chats/${chatId}`);
+    revalidatePath("/dashboard/support");
+
+    return { chat };
+}
+
+// Eliminar chat (admin / moderador)
+export async function deleteSupportChat(chatId: string) {
+    const session = await auth();
+    if (!session?.user) return { error: "No autorizado" };
+
+    const isAdminOrMod =
+        session.user.role === "ADMIN" || session.user.role === "MODERATOR";
+
+    if (!isAdminOrMod) {
+        return { error: "Solo admins o moderadores" };
+    }
+
+    // Gracias al onDelete: Cascade en ChatMessage, se borran todos sus mensajes
+    await prisma.supportChat.delete({
+        where: { id: chatId },
+    });
+
+    revalidatePath("/admin/chats");
+    revalidatePath("/dashboard/support");
+
+    return { success: true };
+}

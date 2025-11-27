@@ -5,6 +5,9 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 import { Clock, User, Calendar, Trash2, Ban, CheckCircle, XCircle, FileText, Shield, ListChecks, Logs } from "lucide-react";
+import AdminPagination from "@/components/admin/AdminPagination";
+const PAGE_SIZE = 10;
+
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +20,7 @@ const actionIcons: any = {
     'DEFAULT': <FileText className="text-gray-500" size={16} />
 };
 
-export default async function AdminLogsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
+export default async function AdminLogsPage({ searchParams }: { searchParams: Promise<{ page?: string; [key: string]: string | undefined }> }) {
     const session = await auth();
     // @ts-ignore
     if (session?.user?.role !== 'ADMIN') {
@@ -25,19 +28,24 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
     }
 
     const params = await searchParams;
+    const pageRaw = params?.page ?? "1";
+    const currentPage = Math.max(1, Number(pageRaw) || 1);
     const filters: any = {};
 
     if (params.adminId) filters.adminId = params.adminId;
     if (params.targetType) filters.targetType = params.targetType;
 
-    const logs = await prisma.moderationLog.findMany({
-        where: filters,
-        include: {
-            admin: { select: { id: true, username: true, email: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-    });
+    const [logs, totalLogs] = await Promise.all([
+        prisma.moderationLog.findMany({
+            orderBy: { createdAt: "desc" },
+            skip: (currentPage - 1) * PAGE_SIZE,
+            take: PAGE_SIZE,
+            include: { admin: true, event: true },
+        }),
+        prisma.moderationLog.count(),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(totalLogs / PAGE_SIZE));
 
     return (
         <div className="max-w-7xl mx-auto">
@@ -101,6 +109,11 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                     <div className="p-12 text-center text-gray-500">No hay registros de actividad.</div>
                 )}
             </div>
+            <AdminPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                basePath="/admin/logs"
+            />
         </div>
     );
 }

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, FormEvent } from "react";
 import { sendSupportMessage } from "@/app/lib/support-actions";
+import { Zoomies } from 'ldrs/react'
+import 'ldrs/react/Zoomies.css'
 import { Bouncy } from "ldrs/react";
 import "ldrs/react/Bouncy.css";
 
@@ -36,56 +38,106 @@ export default function ChatInterface({
     const [messages, setMessages] = useState<ChatMessageType[]>(initialMessages);
     const [input, setInput] = useState("");
     const [isSending, setIsSending] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [syncError, setSyncError] = useState<string | null>(null);
+
     const bottomRef = useRef<HTMLDivElement | null>(null);
 
     const isOwn = (msg: ChatMessageType) => msg.senderId === currentUserId;
 
-    // 👉 Scroll al final cuando cambien los mensajes
+    // Scroll al final cuando cambien los mensajes
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages.length]);
 
-    // 👉 POLLING: pedir mensajes actualizados cada X segundos
+    // Función de sincronización reutilizable
+    const fetchMessages = async () => {
+        try {
+            setSyncError(null);
+            setIsSyncing(true);
+
+            const res = await fetch(`/api/support/messages/${chatId}`, {
+                cache: "no-store",
+            });
+            if (!res.ok) {
+                setSyncError("Error al sincronizar mensajes.");
+                return;
+            }
+
+            const data: ChatMessageType[] = await res.json();
+
+            setMessages((prev) => {
+                if (
+                    prev.length === data.length &&
+                    prev[prev.length - 1]?.id === data[data.length - 1]?.id
+                ) {
+                    return prev;
+                }
+                return data;
+            });
+        } catch (err) {
+            console.error("Error fetching chat messages", err);
+            setSyncError("Error de conexión al actualizar el chat.");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    // Polling más inteligente:
+    // - Solo mientras el chat está abierto
+    // - Solo cuando la pestaña está visible
     useEffect(() => {
         let isMounted = true;
+        let intervalId: number | undefined;
 
-        const fetchMessages = async () => {
-            try {
-                const res = await fetch(`/api/support/messages/${chatId}`, {
-                    cache: "no-store",
-                });
-                if (!res.ok) return;
+        const startPolling = () => {
+            if (!isMounted) return;
+            if (typeof window === "undefined") return;
 
-                const data: ChatMessageType[] = await res.json();
+            // Limpia cualquier intervalo previo
+            if (intervalId) window.clearInterval(intervalId);
 
-                if (!isMounted) return;
+            // Si el chat está cerrado, no seguimos haciendo polling continuo
+            if (isClosed) return;
 
-                // Evitar re-renders innecesarios si no hay cambios
-                setMessages((prev) => {
-                    if (
-                        prev.length === data.length &&
-                        prev[prev.length - 1]?.id === data[data.length - 1]?.id
-                    ) {
-                        return prev;
-                    }
-                    return data;
-                });
-            } catch (err) {
-                console.error("Error fetching chat messages", err);
-            }
+            // Frecuencia: 4s mientras la pestaña está activa
+            intervalId = window.setInterval(() => {
+                if (document.hidden) return;
+                fetchMessages();
+            }, 4000);
         };
 
-        // Llamada inicial
+        // Primera carga siempre
         fetchMessages();
 
-        // Polling cada 5 segundos
-        const interval = setInterval(fetchMessages, 5000);
+        if (typeof document !== "undefined") {
+            const handleVisibility = () => {
+                if (document.hidden) {
+                    if (intervalId) window.clearInterval(intervalId);
+                } else {
+                    // Al volver, sincronizamos una vez y retomamos polling
+                    fetchMessages();
+                    startPolling();
+                }
+            };
+
+            document.addEventListener("visibilitychange", handleVisibility);
+
+            // Arrancamos polling
+            startPolling();
+
+            return () => {
+                isMounted = false;
+                if (intervalId) window.clearInterval(intervalId);
+                document.removeEventListener("visibilitychange", handleVisibility);
+            };
+        }
 
         return () => {
             isMounted = false;
-            clearInterval(interval);
+            if (intervalId) window.clearInterval(intervalId);
         };
-    }, [chatId]);
+    }, [chatId, isClosed]);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -99,7 +151,6 @@ export default function ChatInterface({
             sender: { id: currentUserId, name: "Tú" },
         };
 
-        // Optimistic UI
         setMessages((prev) => [...prev, optimistic]);
         setInput("");
         setIsSending(true);
@@ -109,11 +160,14 @@ export default function ChatInterface({
 
             if (res?.error) {
                 console.error(res.error);
-                // Si quieres, podrías revertir el mensaje optimista aquí o mostrar un toast
+                setSyncError(res.error);
             }
-            // NO hace falta router.refresh(); el polling traerá el mensaje real
+
+            // Forzamos una sincronización inmediata para sustituir el mensaje "optimista"
+            await fetchMessages();
         } catch (err) {
             console.error(err);
+            setSyncError("Error de conexión al enviar el mensaje.");
         } finally {
             setIsSending(false);
         }
@@ -123,11 +177,19 @@ export default function ChatInterface({
         <div className="flex flex-col h-[70vh] max-h-[600px] border border-white/10 rounded-xl bg-neutral-950/60">
             {/* Cabecera simple */}
             <div className="px-4 py-3 border-b border-white/10 flex justify-between items-center">
-                <div className="text-sm text-gray-300">
-                    Chat de soporte
-                    {otherUserLabel && (
-                        <span className="ml-1 text-xs text-gray-500">· {otherUserLabel}</span>
-                    )}
+                <div className="text-sm text-gray-300 flex items-center justify-between w-full">
+                    <div>
+                        Chat de soporte
+                        {otherUserLabel && (
+                            <span className="ml-1 text-xs text-gray-500">
+                                · {otherUserLabel}
+                            </span>
+                        )}
+                    </div>
+
+                    <span className="ml-2 text-[10px] text-white bg-green-600/20 px-2 py-1 rounded-full opacity-90">
+                        {isSyncing ? "Cargando..." : "Conectado"}
+                    </span>
                 </div>
                 {isClosed && (
                     <span className="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/30">
@@ -147,16 +209,19 @@ export default function ChatInterface({
                 {messages.map((msg) => (
                     <div
                         key={msg.id}
-                        className={`flex ${isOwn(msg) ? "justify-end" : "justify-start"}`}
+                        className={`flex ${
+                            isOwn(msg) ? "justify-end" : "justify-start"
+                        }`}
                     >
                         <div
-                            className={`max-w-xs md:max-w-md px-3 py-2 rounded-lg text-xs ${isOwn(msg)
+                            className={`max-w-xs md:max-w-md min-w-[100px] px-3 py-2 rounded-lg text-md ${
+                                isOwn(msg)
                                     ? "bg-blue-600 text-white rounded-br-none"
                                     : "bg-neutral-800 text-gray-100 rounded-bl-none"
-                                }`}
+                            } wrap-break-word `}
                         >
                             {!isOwn(msg) && (
-                                <div className="text-[10px] text-gray-400 mb-0.5">
+                                <div className="text-[12px] text-gray-400 mb-0.5">
                                     {msg.sender.name ?? "Usuario"}
                                 </div>
                             )}
@@ -170,6 +235,19 @@ export default function ChatInterface({
                 <div ref={bottomRef} />
             </div>
 
+            {/* Mensaje de error de sync opcional */}
+            {syncError && (
+                <div className="px-4 pb-2 text-[11px] text-red-400 bg-red-500/5 border-t border-red-500/20 flex items-center justify-between">
+                    <span>{syncError}</span>
+                    <button
+                        onClick={fetchMessages}
+                        className="text-xs underline underline-offset-2 cursor-pointer"
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            )}
+
             {/* Input */}
             <form
                 onSubmit={handleSubmit}
@@ -178,6 +256,7 @@ export default function ChatInterface({
                 <input
                     type="text"
                     value={input}
+                    maxLength={1000}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isClosed || isSending}
                     placeholder={isClosed ? "Chat cerrado" : "Escribe tu mensaje..."}
