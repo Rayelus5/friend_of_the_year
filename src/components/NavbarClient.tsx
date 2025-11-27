@@ -8,7 +8,6 @@ import { LogOut, Menu, X, User, LayoutDashboard, Home, Vote, Sparkles, Info } fr
 import { logoutUser } from "@/app/lib/auth-actions";
 import { clsx } from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 
 type NavbarProps = {
     user: {
@@ -30,7 +29,7 @@ export default function NavbarClient({ user }: NavbarProps) {
                 {/* --- LOGO --- */}
                 <Link href="/" className="flex items-center gap-2 group z-50" onClick={closeMenu}>
                     <div className="w-8 h-8 border border-white/20 bg-gradient-to-br from-gray-700 to-black rounded-lg flex items-center justify-center font-bold text-black group-hover:scale-110 transition-transform">
-                        <Image src="./logo.webp" alt="" />
+                        <img src="./logo.webp" alt="" />
                     </div>
                     <span className="font-bold text-lg tracking-tight text-white">POLLNOW</span>
                 </Link>

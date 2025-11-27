@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs"; // 👈 Añade esto si no estaba
 
 // Helper para verificar permisos de admin
 async function checkAdminPermissions() {
@@ -15,6 +16,7 @@ async function checkAdminPermissions() {
     }
     return session.user;
 }
+
 
 // --- GESTIÓN DE EVENTOS (REVISIÓN) ---
 
@@ -132,4 +134,117 @@ export async function markNotificationRead(notificationId: string) {
     });
     
     revalidatePath('/admin/notifications');
+}
+
+// ─────────────────────────────────────────────
+// GESTIÓN AVANZADA DE USUARIOS (PANEL ADMIN)
+// ─────────────────────────────────────────────
+
+type AdminUpdateUserPayload = {
+    name: string;
+    username: string;
+    email: string;
+    stripePriceId: string | null;
+    subscriptionStatus: string;              // "free" | "active"
+    subscriptionEndDate: string | null;      // fecha en formato "YYYY-MM-DD" o null
+    cancelAtPeriodEnd: boolean;
+};
+
+export async function adminUpdateUser(
+    userId: string,
+    data: AdminUpdateUserPayload
+) {
+    await checkAdminPermissions();
+
+    const {
+        name,
+        username,
+        email,
+        stripePriceId,
+        subscriptionStatus,
+        subscriptionEndDate,
+        cancelAtPeriodEnd,
+    } = data;
+
+    // Normalizamos strings
+    const safeName = (name || "").trim();
+    const safeUsername = (username || "").trim();
+    const safeEmail = (email || "").trim();
+
+    if (!safeName || !safeUsername || !safeEmail) {
+        return { error: "Nombre, usuario y email son obligatorios." };
+    }
+
+    // Validar username único (excluyendo al propio userId)
+    const existingUsername = await prisma.user.findFirst({
+        where: {
+            username: safeUsername,
+            NOT: { id: userId },
+        },
+        select: { id: true },
+    });
+
+    if (existingUsername) {
+        return { error: "Ese nombre de usuario ya está en uso por otro usuario." };
+    }
+
+    // Validar email único
+    const existingEmail = await prisma.user.findFirst({
+        where: {
+            email: safeEmail,
+            NOT: { id: userId },
+        },
+        select: { id: true },
+    });
+
+    if (existingEmail) {
+        return { error: "Ese email ya está en uso por otro usuario." };
+    }
+
+    // Parsear fecha de fin de suscripción
+    let subscriptionEnd: Date | null = null;
+    if (subscriptionEndDate) {
+        const d = new Date(subscriptionEndDate);
+        if (!isNaN(d.getTime())) {
+            subscriptionEnd = d;
+        }
+    }
+
+    await prisma.user.update({
+        where: { id: userId },
+        data: {
+            name: safeName,
+            username: safeUsername,
+            email: safeEmail,
+            stripePriceId: stripePriceId || null,
+            subscriptionStatus: subscriptionStatus || "free",
+            subscriptionEndDate: subscriptionEnd,
+            cancelAtPeriodEnd,
+        },
+    });
+
+    revalidatePath(`/admin/users/${userId}`);
+    return { success: true };
+}
+
+export async function adminSetUserPassword(userId: string, newPassword: string) {
+    await checkAdminPermissions();
+
+    const pwd = (newPassword || "").trim();
+
+    if (pwd.length < 6) {
+        return { error: "La nueva contraseña debe tener al menos 6 caracteres." };
+    }
+
+    const hash = await bcrypt.hash(pwd, 10);
+
+    await prisma.user.update({
+        where: { id: userId },
+        data: {
+            passwordHash: hash,
+        },
+    });
+
+    revalidatePath(`/admin/users/${userId}`);
+    return { success: true };
 }
