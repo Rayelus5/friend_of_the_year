@@ -43,7 +43,7 @@ export default function RegisterForm() {
                     required
                     // --- RESTRICCIONES HTML ---
                     pattern="[a-z]+"
-                    maxLength={15}
+                    maxLength={25}
                     title="Solo letras minúsculas (a-z), sin espacios ni símbolos."
                     // --------------------------
                     className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
@@ -53,7 +53,7 @@ export default function RegisterForm() {
                     }}
                 />
                 <p className="text-[10px] text-gray-500 ml-1">
-                    Máx 15 caracteres. Solo letras minúsculas (a-z).
+                    Máx 25 caracteres. Solo letras minúsculas (a-z).
                 </p>
             </div>
 
