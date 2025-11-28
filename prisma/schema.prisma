@@ -174,7 +174,7 @@ model Poll {
     title         String     @db.VarChar(100)
     description   String?    @db.Text
     votingType    VotingType @default(SINGLE)
-    maxOptions    Int        @default(1) // Solo aplica a LIMITED_MULTIPLE
+    maxOptions    Int        @default(2) // Solo aplica a LIMITED_MULTIPLE
     isPublished   Boolean    @default(false)
     order         Int        @default(0)
     createdAt     DateTime   @default(now())

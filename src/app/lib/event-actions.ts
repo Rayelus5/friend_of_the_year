@@ -159,8 +159,9 @@ export async function createEventPoll(eventId: string, formData: FormData) {
         | "MULTIPLE"
         | "LIMITED_MULTIPLE";
 
-    const maxChoicesStr = formData.get("maxChoices") as string;
-    const maxChoices = maxChoicesStr ? parseInt(maxChoicesStr) : null;
+    const maxOptionsStr = formData.get("maxOptions") as string | null;
+    const maxOptionsFromForm = maxOptionsStr ? parseInt(maxOptionsStr, 10) : null;
+
 
     if (!title) return;
 
@@ -192,10 +193,10 @@ export async function createEventPoll(eventId: string, formData: FormData) {
             order: newOrder,
             isPublished: true,
             votingType: votingType || "SINGLE",
-            // si en tu schema se llama maxOptions:
-            maxOptions: votingType === "LIMITED_MULTIPLE" ? maxChoices ?? 1 : 1,
-            // si se llama maxChoices, deja este campo:
-            // maxChoices: votingType === "LIMITED_MULTIPLE" ? maxChoices : null,
+            maxOptions:
+                votingType === "LIMITED_MULTIPLE"
+                    ? (maxOptionsFromForm ?? 2) // lo que ponga el admin, o 2 por defecto
+                    : 1,                        // SINGLE y MULTIPLE -> 1 (no se usa para limitar)
 
             event: {
                 connect: { id: eventId },
@@ -224,22 +225,22 @@ export async function updateEventPoll(pollId: string, eventId: string, formData:
         | "MULTIPLE"
         | "LIMITED_MULTIPLE";
 
-    const maxChoicesStr = formData.get("maxChoices") as string;
-    const maxChoices = maxChoicesStr ? parseInt(maxChoicesStr) : null;
+    const maxOptionsStr = formData.get("maxOptions") as string | null;
+    const maxOptionsFromForm = maxOptionsStr ? parseInt(maxOptionsStr, 10) : null;
 
-    // 1) Actualizar la propia Poll (sin endAt, usando maxOptions)
     await prisma.poll.update({
         where: { id: pollId },
         data: {
             title,
             description,
             votingType: votingType || "SINGLE",
-            // Igual que en createEventPoll:
-            // - Para LIMITED_MULTIPLE usamos maxChoices (o 1 por defecto)
-            // - Para el resto dejamos 1
-            maxOptions: votingType === "LIMITED_MULTIPLE" ? maxChoices ?? 1 : 1,
+            maxOptions:
+                votingType === "LIMITED_MULTIPLE"
+                    ? (maxOptionsFromForm ?? 2)
+                    : 1,
         },
     });
+
 
     // 2) Sincronizar participantes (options)
     const currentOptions = await prisma.option.findMany({ where: { pollId } });
