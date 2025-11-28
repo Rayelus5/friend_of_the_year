@@ -39,11 +39,11 @@ export default function RegisterForm() {
                 <input
                     name="name"
                     type="text"
-                    placeholder="ej: jesus"
+                    placeholder="ej: ray"
                     required
                     // --- RESTRICCIONES HTML ---
                     pattern="[a-z]+"
-                    maxLength={25}
+                    maxLength={20}
                     title="Solo letras minúsculas (a-z), sin espacios ni símbolos."
                     // --------------------------
                     className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
