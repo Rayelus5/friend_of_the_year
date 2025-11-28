@@ -162,30 +162,27 @@ export async function createEventPoll(eventId: string, formData: FormData) {
     const maxOptionsStr = formData.get("maxOptions") as string | null;
     const maxOptionsFromForm = maxOptionsStr ? parseInt(maxOptionsStr, 10) : null;
 
-
     if (!title) return;
 
-    // 1. Límite de polls por evento según plan
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
     if (!user) return;
     const plan = getPlanFromUser(user);
 
-    const currentPollsCount = await prisma.poll.count({ where: { event: { id: eventId } } });
-    // 👆 o { where: { eventId } } si en tu schema sí hay eventId; ajusta según el modelo
+    const currentPollsCount = await prisma.poll.count({ where: { eventId } });
 
     if (currentPollsCount >= plan.limits.pollsPerEvent) {
         console.error("Límite de categorías alcanzado");
         return;
     }
 
-    // 2. Calcular orden
     const lastPoll = await prisma.poll.findFirst({
-        where: { event: { id: eventId } }, // o where: { eventId } si existe el campo
+        where: { eventId },
         orderBy: { order: "desc" },
     });
     const newOrder = (lastPoll?.order ?? 0) + 1;
 
-    // 3. Crear poll
+    const optionsCount = participantIds.length;
+
     await prisma.poll.create({
         data: {
             title,
@@ -193,15 +190,16 @@ export async function createEventPoll(eventId: string, formData: FormData) {
             order: newOrder,
             isPublished: true,
             votingType: votingType || "SINGLE",
+            // 👇 lógica correcta:
             maxOptions:
                 votingType === "LIMITED_MULTIPLE"
-                    ? (maxOptionsFromForm ?? 2) // lo que ponga el admin, o 2 por defecto
-                    : 1,                        // SINGLE y MULTIPLE -> 1 (no se usa para limitar)
-
+                    ? (maxOptionsFromForm ?? 2)         // usa lo del formulario
+                    : votingType === "SINGLE"
+                        ? 1                              // SINGLE -> siempre 1
+                        : optionsCount || 1,             // MULTIPLE -> todas las opciones
             event: {
                 connect: { id: eventId },
             },
-
             options: {
                 create: participantIds.map((pId) => ({
                     participantId: pId,
@@ -214,12 +212,12 @@ export async function createEventPoll(eventId: string, formData: FormData) {
 }
 
 
+
 export async function updateEventPoll(pollId: string, eventId: string, formData: FormData) {
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
     const participantIds = formData.getAll("participantIds") as string[];
 
-    // Campos de configuración de votación
     const votingType = formData.get("votingType") as
         | "SINGLE"
         | "MULTIPLE"
@@ -228,6 +226,14 @@ export async function updateEventPoll(pollId: string, eventId: string, formData:
     const maxOptionsStr = formData.get("maxOptions") as string | null;
     const maxOptionsFromForm = maxOptionsStr ? parseInt(maxOptionsStr, 10) : null;
 
+    // Opciones actuales
+    const currentOptions = await prisma.option.findMany({ where: { pollId } });
+
+    // Para MULTIPLE: número total de nominados
+    const optionsCount =
+        participantIds.length > 0 ? participantIds.length : currentOptions.length;
+
+    // 1) Actualizar la Poll
     await prisma.poll.update({
         where: { id: pollId },
         data: {
@@ -236,16 +242,14 @@ export async function updateEventPoll(pollId: string, eventId: string, formData:
             votingType: votingType || "SINGLE",
             maxOptions:
                 votingType === "LIMITED_MULTIPLE"
-                    ? (maxOptionsFromForm ?? 2)
-                    : 1,
+                    ? (maxOptionsFromForm ?? 2)        // limitado
+                    : votingType === "SINGLE"
+                        ? 1                            // single
+                        : optionsCount || 1,           // multiple -> todas
         },
     });
 
-
     // 2) Sincronizar participantes (options)
-    const currentOptions = await prisma.option.findMany({ where: { pollId } });
-
-    // Opciones a borrar: ya no están en la lista enviada
     const toDelete = currentOptions.filter(
         (o) => !participantIds.includes(o.participantId)
     );
@@ -253,11 +257,9 @@ export async function updateEventPoll(pollId: string, eventId: string, formData:
         await prisma.option.delete({ where: { id: opt.id } });
     }
 
-    // Participantes actuales (por id)
     const currentIds = currentOptions.map((o) => o.participantId);
-
-    // Opciones a crear: están en el form pero no existen aún
     const toCreate = participantIds.filter((pId) => !currentIds.includes(pId));
+
     for (const pId of toCreate) {
         await prisma.option.create({
             data: {
@@ -269,6 +271,7 @@ export async function updateEventPoll(pollId: string, eventId: string, formData:
 
     revalidatePath(`/dashboard/event/${eventId}`);
 }
+
 
 
 export async function deleteEventPoll(pollId: string, eventId: string) {
