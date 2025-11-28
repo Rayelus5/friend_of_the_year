@@ -61,7 +61,7 @@ export default function EventStatistics({ stats, planSlug }: Props) {
     const maxPollVotes = Math.max(displayStats.totalVotes, 1);
 
     return (
-        <div className="relative min-h-[600px] space-y-8">
+        <div className="relative min-h-[600px] space-y-8 tour-stats-section">
 
             {/* --- PAYWALL --- */}
             {isFree && (

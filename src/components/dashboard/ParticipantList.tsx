@@ -124,7 +124,7 @@ function ParticipantForm({
             }}
             className={isEditMode ? "flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-4" : "flex flex-col gap-4"}
         >
-            <div className="flex items-start gap-4 w-full">
+            <div className="flex items-start gap-4 w-full ">
 
                 <div className="relative group shrink-0">
                     <div
@@ -287,7 +287,7 @@ export default function ParticipantList({
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 tour-participants-section">
 
             {/* HEADER */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">

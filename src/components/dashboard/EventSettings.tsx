@@ -244,7 +244,7 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
                 </div>
 
                 {/* FORMULARIO ORIGINAL */}
-                <form action={handleFormSubmit} className="space-y-6 p-6 bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg">
+                <form action={handleFormSubmit} className="space-y-6 p-6 bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg tour-event-settings-card">
                     {/* ... (Mismo contenido del formulario que tenías: Título, Descripción, Fecha...) ... */}
                     {/* COPIA AQUÍ EL RESTO DEL FORMULARIO QUE YA TENÍAS EN EL ARCHIVO PREVIO */}
                     <h2 className="text-2xl font-bold text-white mb-4 border-b border-neutral-700 pb-3">Configuración General</h2>

@@ -119,7 +119,7 @@ export default function PollList({
     return (
         <>
             {/* HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 tour-polls-section">
                 <div className="flex items-center gap-2">
                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">Orden de Categorías</h3>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full border ${currentCount >= currentLimit ? 'text-red-400 border-red-500/30 bg-red-500/10' : 'text-gray-500 border-gray-700'}`}>

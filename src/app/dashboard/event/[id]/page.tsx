@@ -56,7 +56,7 @@ export default async function EventDashboardPage({ params }: Props) {
         <main className="min-h-screen bg-black text-white">
 
             <header className="border-b border-white/10 bg-neutral-900/30">
-                <div className="max-w-7xl mx-auto px-6 py-8">
+                <div className="max-w-7xl mx-auto px-6 py-8 tour-event-header">
                     <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                         <Link href="/dashboard" className="hover:text-white transition-colors">Mis Eventos</Link>
                         <span>/</span>
