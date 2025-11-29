@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BarChart3, TrendingUp, Users, Lock, Eye, ChevronRight, X } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Lock, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 // import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,40 +39,52 @@ type StatsData = {
 type Props = {
     stats: StatsData | null;
     planSlug: string;
+    isAdmin?: boolean;
 };
 
-export default function EventStatistics({ stats, planSlug }: Props) {
-    const isFree = planSlug === 'free';
-    const isPlus = planSlug === 'plus';
+export default function EventStatistics({ stats, planSlug, isAdmin }: Props) {
+    const isAdminViewer = !!isAdmin;
+
+    // 👇 Para admins, nunca se considera "free" (no hay paywall ni mock)
+    const isFree = !isAdminViewer && planSlug === "free";
+    const isPlus = planSlug === "plus" || isAdminViewer;
+
     const [selectedPoll, setSelectedPoll] = useState<PollDetail | null>(null);
     const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
 
     // Datos Mock o Reales
-    const displayStats = isFree ? MOCK_STATS : (stats || {
-        totalVotes: 0,
-        totalPolls: 0,
-        votesByPoll: [],
-        activityTimeline: [],
-        pollsDetail: [],
-        isAnonymousConfig: true
-    });
+    const displayStats: StatsData = isFree
+        ? MOCK_STATS
+        : stats || {
+              totalVotes: 0,
+              totalPolls: 0,
+              votesByPoll: [],
+              activityTimeline: [],
+              pollsDetail: [],
+              isAnonymousConfig: true,
+          };
 
-    const maxTimelineVotes = Math.max(...displayStats.activityTimeline.map(d => d.count), 1);
+    // (por si en el futuro dibujas timeline)
+    const maxTimelineVotes = Math.max(
+        ...displayStats.activityTimeline.map((d) => d.count),
+        1
+    );
     const maxPollVotes = Math.max(displayStats.totalVotes, 1);
 
     return (
         <div className="relative min-h-[600px] space-y-8 tour-stats-section">
-
-            {/* --- PAYWALL --- */}
+            {/* --- PAYWALL (solo viewers FREE no-admin) --- */}
             {isFree && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-center animate-in fade-in duration-700">
-                    {/* ... Mismo contenido de paywall anterior ... */}
                     <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(245,158,11,0.5)]">
                         <Lock className="text-white w-8 h-8" />
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-2">Desbloquea las Estadísticas</h3>
+                    <h3 className="text-3xl font-bold text-white mb-2">
+                        Desbloquea las Estadísticas
+                    </h3>
                     <p className="text-gray-300 max-w-md mb-8">
-                        Obtén insights detallados, gráficos de participación y control total con el plan Premium.
+                        Obtén insights detallados, gráficos de participación y control
+                        total con el plan Premium.
                     </p>
                     <Link
                         href="/premium"
@@ -83,8 +95,11 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                 </div>
             )}
 
-            <div className={`space-y-8 transition-all ${isFree ? 'opacity-20 filter blur-sm pointer-events-none select-none' : ''}`}>
-
+            <div
+                className={`space-y-8 transition-all ${
+                    isFree ? "opacity-20 filter blur-sm pointer-events-none select-none" : ""
+                }`}
+            >
                 {/* 1. KPIs */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <KpiCard
@@ -99,29 +114,37 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                     />
                     <KpiCard
                         title="Participación"
-                        value={displayStats.totalVotes > 0 ? "Activa" : "Sin datos"}
+                        value={
+                            displayStats.totalVotes > 0 ? "Activa" : "Sin datos"
+                        }
                         icon={<Users className="text-green-400" />}
                         subtext="Estado del evento"
                     />
                 </div>
 
-                
                 <div className="grid lg:grid-cols-2 gap-8">
                     {/* 2. GRÁFICO BARRAS */}
-                    
                     <div className="bg-neutral-900/50 border border-white/10 rounded-2xl p-8 flex flex-col max-h-[400px] cursor-grab">
-                        <h3 className="text-lg font-bold text-white mb-6">Rendimiento General</h3>
+                        <h3 className="text-lg font-bold text-white mb-6">
+                            Rendimiento General
+                        </h3>
                         <div className="overflow-y-auto space-y-4">
                             {displayStats.votesByPoll.map((item, idx) => (
                                 <div key={idx} className="group">
                                     <div className="flex justify-between text-sm mb-1">
                                         <span className="text-gray-300">{item.name}</span>
-                                        <span className="text-gray-500 font-mono mr-3">{item.votes} votos</span>
+                                        <span className="text-gray-500 font-mono mr-3">
+                                            {item.votes} votos
+                                        </span>
                                     </div>
                                     <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-gradient-to-r from-blue-600 to-sky-400 rounded-full"
-                                            style={{ width: `${(item.votes / maxPollVotes) * 100}%` }}
+                                            style={{
+                                                width: `${
+                                                    (item.votes / maxPollVotes) * 100
+                                                }%`,
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -132,7 +155,9 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                     {/* 3. LISTA DETALLADA DE CATEGORÍAS (SCROLL) */}
                     <div className="bg-neutral-900/50 border border-white/10 rounded-2xl p-8 flex flex-col max-h-[400px]">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-white">Desglose por Categoría</h3>
+                            <h3 className="text-lg font-bold text-white">
+                                Desglose por Categoría
+                            </h3>
                             {!isPlus && !isFree && (
                                 <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-1 rounded border border-purple-500/30">
                                     Mejora a Unlimited para ver usuarios
@@ -146,16 +171,23 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                     key={poll.id}
                                     onClick={() => {
                                         setSelectedPoll(poll);
-                                        // Seleccionar por defecto la opción ganadora
-                                        if (poll.options.length > 0) setSelectedOptionId(poll.options[0].id);
+                                        if (poll.options.length > 0)
+                                            setSelectedOptionId(poll.options[0].id);
                                     }}
                                     className="w-full text-left p-4 rounded-xl bg-black/40 border border-white/10 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group flex justify-between items-center cursor-pointer"
                                 >
                                     <div>
-                                        <p className="font-bold text-gray-200 text-sm group-hover:text-white">{poll.title}</p>
-                                        <p className="text-xs text-gray-500 mt-1">{poll.totalVotes} votos registrados</p>
+                                        <p className="font-bold text-gray-200 text-sm group-hover:text-white">
+                                            {poll.title}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {poll.totalVotes} votos registrados
+                                        </p>
                                     </div>
-                                    <ChevronRight size={16} className="text-gray-600 group-hover:text-blue-400" />
+                                    <ChevronRight
+                                        size={16}
+                                        className="text-gray-600 group-hover:text-blue-400"
+                                    />
                                 </button>
                             ))}
                         </div>
@@ -183,14 +215,19 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                             {/* Header Modal */}
                             <div className="p-6 border-b border-white/10 flex justify-between items-start bg-neutral-900 sticky top-0 z-10">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-white">{selectedPoll.title}</h2>
+                                    <h2 className="text-2xl font-bold text-white">
+                                        {selectedPoll.title}
+                                    </h2>
                                     <p className="text-sm text-gray-400 mt-1">
                                         {isPlus && !displayStats.isAnonymousConfig
                                             ? "Mostrando identidades de votantes (Modo Transparente)"
                                             : "Identidades ocultas (Modo Anónimo o Plan insuficiente)"}
                                     </p>
                                 </div>
-                                <button onClick={() => setSelectedPoll(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer">
+                                <button
+                                    onClick={() => setSelectedPoll(null)}
+                                    className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                                >
                                     <X className="text-gray-400" />
                                 </button>
                             </div>
@@ -198,8 +235,10 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                             <div className="flex flex-col md:flex-row h-full overflow-hidden">
                                 {/* Sidebar: Selector de Opciones */}
                                 <div className="w-full md:w-1/3 border-r border-white/10 bg-black/20 overflow-y-auto custom-scrollbar p-4 space-y-2">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 pl-2">Resultados</p>
-                                    {selectedPoll.options.map(opt => (
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 pl-2">
+                                        Resultados
+                                    </p>
+                                    {selectedPoll.options.map((opt) => (
                                         <button
                                             key={opt.id}
                                             onClick={() => setSelectedOptionId(opt.id)}
@@ -212,14 +251,31 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                         >
                                             <div className="w-8 h-8 rounded-full bg-black/30 flex items-center justify-center overflow-hidden border border-white/10">
                                                 {opt.imageUrl ? (
-                                                    <img src={opt.imageUrl} alt="" width={32} height={32} className="object-cover w-full h-full" />
+                                                    <img
+                                                        src={opt.imageUrl}
+                                                        alt=""
+                                                        width={32}
+                                                        height={32}
+                                                        className="object-cover w-full h-full"
+                                                    />
                                                 ) : (
-                                                    <span className="text-xs font-bold">{opt.name[0]}</span>
+                                                    <span className="text-xs font-bold">
+                                                        {opt.name[0]}
+                                                    </span>
                                                 )}
                                             </div>
                                             <div className="flex-1 text-left">
-                                                <p className="text-sm font-bold truncate">{opt.name}</p>
-                                                <p className={clsx("text-xs", selectedOptionId === opt.id ? "text-blue-200" : "text-gray-500")}>
+                                                <p className="text-sm font-bold truncate">
+                                                    {opt.name}
+                                                </p>
+                                                <p
+                                                    className={clsx(
+                                                        "text-xs",
+                                                        selectedOptionId === opt.id
+                                                            ? "text-blue-200"
+                                                            : "text-gray-500"
+                                                    )}
+                                                >
                                                     {opt.votesCount} votos
                                                 </p>
                                             </div>
@@ -233,14 +289,29 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                         <>
                                             <h3 className="text-sm font-bold text-gray-400 mb-6 flex items-center gap-2">
                                                 <Users size={16} />
-                                                Votaron por: <span className="text-white">{selectedPoll.options.find(o => o.id === selectedOptionId)?.name}</span>
+                                                Votaron por:{" "}
+                                                <span className="text-white">
+                                                    {
+                                                        selectedPoll.options.find(
+                                                            (o) =>
+                                                                o.id ===
+                                                                selectedOptionId
+                                                        )?.name
+                                                    }
+                                                </span>
                                             </h3>
 
                                             {/* Lógica de Privacidad */}
-                                            {(!isPlus || displayStats.isAnonymousConfig) ? (
+                                            {(!isPlus ||
+                                                displayStats.isAnonymousConfig) ? (
                                                 <div className="flex flex-col items-center justify-center h-64 text-center opacity-50">
-                                                    <Lock size={48} className="text-gray-600 mb-4" />
-                                                    <p className="text-lg font-bold text-gray-400">Votantes Ocultos</p>
+                                                    <Lock
+                                                        size={48}
+                                                        className="text-gray-600 mb-4"
+                                                    />
+                                                    <p className="text-lg font-bold text-gray-400">
+                                                        Votantes Ocultos
+                                                    </p>
                                                     <p className="text-sm text-gray-600 max-w-xs">
                                                         {!isPlus
                                                             ? "Necesitas el plan Premium+ para ver identidades."
@@ -249,20 +320,43 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                                 </div>
                                             ) : (
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                                    {selectedPoll.options.find(o => o.id === selectedOptionId)?.voters.map((voter, i) => (
-                                                        <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 cursor-pointer">
-                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
-                                                                {voter.image ? (
-                                                                    <img src={voter.image} alt="" width={32} height={32} />
-                                                                ) : (
-                                                                    voter.name[0]
-                                                                )}
+                                                    {selectedPoll.options
+                                                        .find(
+                                                            (o) =>
+                                                                o.id ===
+                                                                selectedOptionId
+                                                        )
+                                                        ?.voters.map((voter, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 cursor-pointer"
+                                                            >
+                                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
+                                                                    {voter.image ? (
+                                                                        <img
+                                                                            src={voter.image}
+                                                                            alt=""
+                                                                            width={32}
+                                                                            height={32}
+                                                                        />
+                                                                    ) : (
+                                                                        voter.name[0]
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-sm text-gray-300 truncate">
+                                                                    {voter.name}
+                                                                </span>
                                                             </div>
-                                                            <span className="text-sm text-gray-300 truncate">{voter.name}</span>
-                                                        </div>
-                                                    ))}
-                                                    {selectedPoll.options.find(o => o.id === selectedOptionId)?.voters.length === 0 && (
-                                                        <p className="text-gray-500 text-sm italic col-span-full">Nadie votó por esta opción aún.</p>
+                                                        ))}
+                                                    {selectedPoll.options.find(
+                                                        (o) =>
+                                                            o.id ===
+                                                            selectedOptionId
+                                                    )?.voters.length === 0 && (
+                                                        <p className="text-gray-500 text-sm italic col-span-full">
+                                                            Nadie votó por esta opción
+                                                            aún.
+                                                        </p>
                                                     )}
                                                 </div>
                                             )}
@@ -270,7 +364,6 @@ export default function EventStatistics({ stats, planSlug }: Props) {
                                     )}
                                 </div>
                             </div>
-
                         </motion.div>
                     </motion.div>
                 )}
@@ -283,15 +376,21 @@ function KpiCard({ title, value, icon, subtext }: any) {
     return (
         <div className="bg-neutral-900/50 border border-white/10 rounded-2xl p-6 flex items-start justify-between">
             <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{title}</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                    {title}
+                </p>
                 <h4 className="text-3xl font-black text-white">{value}</h4>
-                {subtext && <p className="text-xs text-green-400 mt-1 font-medium">{subtext}</p>}
+                {subtext && (
+                    <p className="text-xs text-green-400 mt-1 font-medium">
+                        {subtext}
+                    </p>
+                )}
             </div>
             <div className="p-3 bg-white/5 rounded-xl border border-white/5">
                 {icon}
             </div>
         </div>
-    )
+    );
 }
 
 const MOCK_STATS: StatsData = {
@@ -300,5 +399,5 @@ const MOCK_STATS: StatsData = {
     votesByPoll: [],
     activityTimeline: [],
     pollsDetail: [],
-    isAnonymousConfig: true
+    isAnonymousConfig: true,
 };

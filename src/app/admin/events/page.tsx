@@ -195,7 +195,7 @@ export default async function AdminEventsPage({
                                     })}
                                 </td>
                                 <td className="p-4 text-right">
-                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex justify-end gap-2 opacity-20 group-hover:opacity-100 transition-opacity">
                                         <Link
                                             href={`/e/${event.slug}`}
                                             target="_blank"
@@ -212,7 +212,7 @@ export default async function AdminEventsPage({
                                             <Eye size={16} />
                                         </Link>
                                         {/* Botón de borrado directo */}
-                                        <form
+                                        {/* <form
                                             action={async () => {
                                                 "use server";
                                                 await deleteEvent(event.id, true);
@@ -224,7 +224,7 @@ export default async function AdminEventsPage({
                                             >
                                                 <Trash2 size={16} />
                                             </button>
-                                        </form>
+                                        </form> */}
                                     </div>
                                 </td>
                             </tr>
