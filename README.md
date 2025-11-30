@@ -1,413 +1,500 @@
-# POLLNOW
+# Pollnow
 
-## Descripción General
+> Internal codename: `friend_of_the_year (FOTY)`  
+> Oficial final product name: **POLLNOW**
 
-POLLNOW es una aplicación web Full-Stack que permite la creación y gestión de certámenes de premios. A diferencia de las herramientas de encuestas convencionales, POLLNOW estructura la experiencia en fases temporales definidas (Votación y Gala), asegurando la integridad de los resultados hasta una fecha específica.
+<!-- ![Next](https://img.shields.io/badge/-Next.js-20232a?logo=nextdotjs&logoColor=white) -->
+![React](https://img.shields.io/badge/-React-20232a?logo=react&logoColor=61dafb)
+![TypeScript](https://img.shields.io/badge/-TypeScript-3178c6?logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/-Prisma-2D3748?logo=prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Stripe](https://img.shields.io/badge/-Stripe-635bff?logo=stripe&logoColor=white)
 
-La aplicación prioriza la experiencia de usuario (UX) mediante un flujo de votación continuo y un diseño minimalista en modo oscuro, garantizando al mismo tiempo el anonimato técnico de los votantes sin requerir registro de usuarios.
+---
 
-## Arquitectura y Stack Tecnológico
+## 📝 Project Description
 
-El proyecto está construido sobre una arquitectura moderna orientada a Serverless y renderizado en servidor (SSR).
+POLLNOW is a full-stack awards & voting platform built on top of **Next.js (App Router)**, designed for creating, managing, and analyzing structured events with multi-category voting.
 
-* **Framework:** Next.js 16 (App Router)
-* **Lenguaje:** TypeScript
-* **Base de Datos:** PostgreSQL
-* **ORM:** Prisma
-* **Estilos:** Tailwind CSS
-* **Infraestructura:** Vercel (Soporte para Edge Middleware)
+The application combines:
 
-### Modelo de Datos
+- A **public-facing voting experience** (anonymous, device-bound, anti-duplicate),
+- A **multi-tenant user dashboard** for event owners,
+- A **moderation-oriented admin panel**,
+- A **subscription system** based on Stripe, and
+- Supporting modules for **support tickets**, **notifications**, and **analytics**.
 
-El sistema utiliza un modelo relacional que separa a los participantes de las encuestas, permitiendo la reutilización de entidades.
+The goal of this project is not just to “make something work”, but to explore how a modern SaaS-style system can be built with:
 
-* **Participant:** Entidad recurrente (el individuo susceptible de ser votado).
-* **Poll:** La categoría de votación.
-* **Option:** Tabla de relación que vincula un `Participant` con una `Poll` específica.
-* **Vote:** Registro de participación. Incluye un hash de identidad para prevenir duplicidad.
+- **React Server Components + Server Actions**
+- **Prisma with a non-trivial relational schema**
+- **NextAuth with custom flows (email verification, Google, password reset)**
+- **Stripe billing & webhooks**
+- **Production-oriented patterns** (middleware, modular server actions, strict validation).
 
-## Funcionalidades Principales
+---
 
-1.  **Votación Anónima Persistente:**
-    Utiliza un sistema de identificación basado en cookies `HttpOnly` firmadas y hashes en base de datos (`voterHash`). Esto impide votos múltiples por dispositivo/sesión sin necesidad de autenticación tradicional (email/password).
+## 🔑 Core Concepts & Domain Model
 
-2.  **Control Temporal (Anti-Spoiler):**
-    Las rutas de resultados (`/results`) implementan una validación de fecha contra la variable global `GALA_DATE`. Si la fecha actual es anterior al evento, el servidor bloquea el acceso a los datos y muestra una cuenta regresiva.
+The application revolves around **events** (award ceremonies, competitions, polls) and their **voting lifecycle**.
 
-3.  **Panel de Administración Seguro:**
-    CMS integrado en la ruta `/admin`. El acceso está restringido a nivel de red mediante un Middleware que verifica la dirección IP del cliente contra una lista blanca (`ALLOWED_IP`).
+### Main Entities
 
-4.  **Flujo Lineal:**
-    La navegación guía al usuario secuencialmente desde la primera categoría hasta la finalización, maximizando la tasa de participación completa.
+- **User**
+  - Owns events
+  - Has a subscription status (free / premium tiers)
+  - Can authenticate via credentials or Google
+  - Receives notifications and support messages
 
-## Instalación y Configuración Local
+- **Event**
+  - Represents a specific awards ceremony / poll session
+  - Controls:
+    - Visibility (public list vs direct link access)
+    - Voting mode (anonymous vs identified)
+    - Gala date and result visibility
+    - Status (`DRAFT`, `PENDING`, `APPROVED`, `DENIED`)
 
-Siga estos pasos para desplegar el entorno de desarrollo.
+- **Participant**
+  - A nominee / candidate that can be reused across polls in the same event
 
-### Requisitos
-* Node.js 18 o superior.
-* Acceso a una instancia de PostgreSQL.
+- **Poll**
+  - A category inside an event (e.g. “Best Movie”, “Best Streamer”)
+  - Associated with:
+    - Order (for linear voting flow)
+    - Options
+    - Optional max options / selection rules
 
-### Pasos
+- **Option**
+  - Link between a `Participant` and a `Poll`
+  - Defines which participant is part of which category
+  - Maintains its own order inside a poll
 
-1.  **Clonar el repositorio:**
-    ```bash
-    git clone <url-del-repositorio>
-    cd friend-of-the-year
-    ```
+- **Vote**
+  - A vote for a specific `Option` in a `Poll`
+  - Contains:
+    - Timestamps
+    - Optional `userId` when the voter's identity is known
+    - An associated **voter hash** for anonymous / device-bound tracking
 
-2.  **Instalar dependencias:**
-    ```bash
-    npm install
-    ```
+- **SupportChat / SupportMessage**
+  - Used for in-app support ticketing between users and admins
 
-3.  **Configuración de Entorno:**
-    Cree un archivo `.env` en la raíz del proyecto basándose en el ejemplo provisto.
-    ```env
-    DATABASE_URL="postgresql://usuario:password@host:5432/database"
-    ```
+- **Notification**
+  - Server-side generated events rendered in the dashboard
 
-4.  **Inicialización de Base de Datos:**
-    Ejecute las migraciones y el script de semilla (seed) para poblar la base de datos con datos iniciales.
-    ```bash
-    npx prisma migrate dev --name init
-    ```
+- **Billing / Tokens**
+  - Subscription & Stripe metadata
+  - Verification tokens
+  - Password reset tokens
 
-5.  **Ejecución:**
-    ```bash
-    npm run dev
+All of this is expressed in `prisma/schema.prisma` and evolved via many migrations under `prisma/migrations`.
 
-    o
+---
 
-    npx dotenv -e .env -- npm run dev
-    ```
+## 🧱 Architecture & Runtime Model
 
-## Guía de Despliegue (Producción)
+POLLNOW is structured around **Next.js App Router** and uses a combination of:
 
-Esta aplicación está optimizada para su despliegue en Vercel.
+- **Server Components** for data-fetching routes,
+- **Client Components** for interactive UI,
+- **Server Actions** for mutations and business logic,
+- **API Routes** for Stripe webhooks and legacy-style endpoints.
 
-1.  Importe el repositorio en Vercel.
-2.  Configure la variable de entorno `DATABASE_URL`.
-3.  **Configuración de Build:** Es crítico sobrescribir el comando de construcción predeterminado para asegurar la generación del cliente Prisma antes de la compilación de Next.js.
-
-**Build Command:**
-
-```bash
-npx prisma generate && npx prisma migrate deploy && next build
-```
-
-## Estructura del Proyecto
+High-level view:
 
 ```text
-src/
-├── app/
-│   ├── admin/           # Panel de control (protegido por IP)
-│   ├── api/             # Endpoints REST (voto, resultados)
-│   ├── polls/           # Vistas públicas de votación
-│   └── results/         # Vistas de resultados (protegidas por fecha)
-├── components/          # Componentes UI reutilizables
-├── lib/                 # Lógica de negocio y configuración (Prisma, Config)
-└── middleware.ts        # Lógica de seguridad y gestión de sesiones
+Client (React/Tailwind)  ➡️  Next.js App Router
+                         ➡️  Server Components & Actions
+                         ➡️  Prisma (PostgreSQL)
+                         ➡️  External services (Stripe, email provider)
+```
+
+### Key Architectural Choices
+
+* **Server Actions** in `src/app/lib/*-actions.ts` (e.g. `dashboard-actions`, `event-actions`, `stats-actions`) encapsulate business logic instead of pushing everything into API routes.
+* **NextAuth** is configured in `src/auth.config.ts` and `src/auth.ts`, using Prisma as the adapter and Postgres as the storage.
+* **Stripe** integration is handled via:
+
+  * Server-side actions in `stripe-actions.ts`
+  * Webhook route in `app/api/webhooks/stripe/route.ts`
+* **Middleware** (`src/middleware.ts`) is used to:
+
+  * Protect admin routes
+  * Enforce auth in certain sections
+  * Potentially handle maintenance mode and public/private logic.
+
+---
+
+## 🧩 Major Subsystems
+
+### 1. Authentication & User Lifecycle
+
+Located mainly in:
+
+* `src/auth.config.ts`
+* `src/auth.ts`
+* `src/app/lib/auth-actions.ts`
+* `src/app/api/auth/[...nextauth]/route.ts`
+
+Capabilities:
+
+* Email/password login with bcrypt-hashed passwords.
+* Google OAuth login (`authenticateGoogle`).
+* Email verification flow:
+
+  * Verification tokens (`lib/tokens.ts`)
+  * Verification page under `app/auth/new-verification/page.tsx`.
+* Password reset support via tokens (`reset-password.ts`, tokens model).
+* Session-based role handling (`USER`, `MODERATOR`, `ADMIN`).
+
+Authentication is consumed in server components via `auth()` calls and used to gate entire routes (`dashboard`, `admin`, etc.).
+
+---
+
+### 2. Event Management & Dashboard
+
+Key paths & modules:
+
+* `src/app/dashboard/page.tsx`
+* `src/app/dashboard/event/[id]/page.tsx`
+* `src/app/lib/dashboard-actions.ts`
+* `src/app/lib/event-actions.ts`
+* `src/components/dashboard/*`
+
+The dashboard provides:
+
+* **Events tab**
+
+  * Create event (`CreateEventButton` + `dashboard-actions.ts`)
+  * List events (`DashboardEventCard`)
+  * Per-event link into `/dashboard/event/[id]`
+
+* **Event detail page**
+
+  * `EventTabs` wraps:
+
+    * `EventSettings` (configuration, gala date, visibility, anonymous voting)
+    * `ParticipantList` (add/edit/remove participants)
+    * `PollList` (categories, drag & drop ordering, max options)
+    * `EventStatistics` (aggregated stats, breakdown by category, premium gating)
+
+* **Notifications & Support**
+
+  * `DashboardTabs` also exposes:
+
+    * Notifications tab (`NotificationsTab`, `user-notification-actions.ts`)
+    * Support tab (`SupportTab`, support ticket list + `CreateTicketButton`)
+
+All writes are performed via server actions invoked from forms and interactive clients.
+
+---
+
+### 3. Public Voting Flow
+
+Public event access is organized under:
+
+* `src/app/e/[slug]/page.tsx`        → Voting entry for a specific event
+* `src/app/e/[slug]/completed/page.tsx` → Post-voting “thank you” page
+* `src/app/e/[slug]/results/page.tsx`   → Results page (time-gated)
+* `src/app/polls/*`                     → Public explore & listing pages
+* `src/app/api/polls/*`                 → Voting & result APIs
+
+Voting UX:
+
+1. User lands on `/e/[slug]`.
+2. A **linear voting flow** guides them through each poll (category) in order.
+3. Votes are validated and stored via:
+
+   * `public-actions.ts`
+   * `event-actions.ts`
+   * `stats-actions.ts`
+4. When finished, the user is redirected to a completion page.
+5. Results may be:
+
+   * Hidden until a gala date,
+   * Partially visible (e.g. aggregated only),
+   * Or fully visible if configuration & time allow.
+
+---
+
+### 4. Anonymous Voting Engine
+
+Core implementation lives in:
+
+* Prisma models (`Vote`, `Event`, etc.)
+* `stats-actions.ts`
+* `public-actions.ts` & `polls` API routes
+
+Mechanisms:
+
+* Each anonymous visitor is assigned a **voter hash**:
+
+  * Derived from device/session information.
+  * Stored in the DB to prevent re-votes per poll/event.
+* **HttpOnly cookies** + **hashes** are used to:
+
+  * Avoid exposing identifiers to the client.
+  * Distinguish “already voted” states.
+* If a user is authenticated, their `userId` may be attached to the vote (depending on event configuration).
+* Events have an `isAnonymousVoting` flag:
+
+  * When `true`, identities are hidden even from premium analytics.
+  * When `false`, premium tiers (or admins) can see who voted for what (when allowed).
+
+---
+
+### 5. Statistics & Analytics
+
+`src/app/lib/stats-actions.ts` exposes a high-level `getEventStats(eventId)` function that:
+
+* Fetches polls, options, and votes for the event.
+* Computes:
+
+  * `totalVotes`
+  * `totalPolls`
+  * `votesByPoll` (for bar charts)
+  * Per-poll breakdown:
+
+    * Options with their `votesCount`
+    * List of voters (if allowed)
+* Builds an `activityTimeline` from recent votes grouped by date.
+* Reads `event.isAnonymousVoting` to ensure privacy is respected in the UI.
+
+The client-side visualization is handled by:
+
+* `src/components/dashboard/EventStatistics.tsx`
+
+Features include:
+
+* KPIs (total votes, active categories, participation status).
+* Progress-bar style charts for vote distribution.
+* Scrollable list of polls with per-category modals.
+* Conditional UI:
+
+  * Free plan: blurred/gated UI + mock stats.
+  * Premium: real numbers.
+  * Premium+ or Admin: voter identities (if event is not anonymous).
+
+---
+
+### 6. Admin Panel
+
+Admin routes are located under:
+
+* `src/app/admin/*`
+
+Modules:
+
+* `admin/page.tsx` – Admin dashboard root.
+* `admin/events` – Event list & review.
+* `admin/reviews` – Content moderation for event reviews.
+* `admin/users` – User list and user detail view.
+* `admin/notifications` – Admin notifications UI.
+* `admin/chats` – Support chats view.
+
+Supporting business logic:
+
+* `src/app/lib/admin-actions.ts` – Approvals, rejections, user updates, etc.
+
+Admins have elevated visibility and control:
+
+* Can inspect any event and its stats.
+* May override limitations imposed on regular users.
+* Serve as moderators for reports and abuse.
+
+---
+
+### 7. Support & Notifications
+
+**Support system**:
+
+* `src/app/dashboard/support/*`
+* `src/app/admin/chats/*`
+* `src/app/lib/support-actions.ts`
+* `src/app/api/support/messages/[chatId]/route.ts`
+
+Users can open support chats; admins reply via the admin interface.
+
+**Notifications**:
+
+* `src/app/lib/user-notification-actions.ts`
+* Rendered in the dashboard `Notifications` tab.
+* Allow marking single notifications as read or all at once.
+
+---
+
+### 8. Billing & Subscription Plans
+
+Billing logic is spread across:
+
+* `src/app/lib/plans.ts` – Plan metadata (slug, features, pricing tiers).
+* `src/app/lib/stripe-actions.ts` – Checkout, portal, and subscription-related actions.
+* `src/app/api/webhooks/stripe/route.ts` – Stripe webhook handler.
+* `src/app/premium/page.tsx` – Pricing / upsell page.
+* `src/components/premium/*` – `PricingSection`, `CheckoutButton`, `ManageButton`.
+
+User subscription data is persisted in the `User` model:
+
+* `subscriptionStatus`
+* `stripeCustomerId`
+* `stripeSubscriptionId`
+* `stripePriceId`
+* `subscriptionEndDate`
+* `cancelAtPeriodEnd`
+
+The dashboard and event statistics use these fields to conditionally enable premium features.
+
+---
+
+## 🛠️ Tech Stack
+
+Core stack:
+
+* **Framework:** Next.js (App Router, RSC, Server Actions)
+* **Language:** TypeScript
+* **Frontend:** React, Tailwind CSS, Framer Motion
+* **Backend:** Node.js (via Next.js runtime)
+* **ORM:** Prisma
+* **Database:** PostgreSQL
+* **Auth:** NextAuth + @auth/prisma-adapter
+* **Payments:** Stripe
+* **Mail:** Resend (email verification, transactional emails)
+* **3D / Visuals:** `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing`
+* **Validation:** Zod
+* **Utilities:** date-fns, clsx, use-debounce, canvas-confetti, bcryptjs
+
+---
+
+## 📦 Selected Dependencies
+
+Some key packages used throughout the project:
+
+```txt
+@auth/prisma-adapter
+@hello-pangea/dnd
+@pmndrs/assets
+@pmndrs/branding
+@prisma/client
+@react-spring/web
+@react-three/drei
+@react-three/fiber
+@react-three/postprocessing
+bcryptjs
+canvas-confetti
+clsx
+date-fns
+framer-motion
+ldrs
+lucide-react
+resend
+zod
 ```
 
 ---
 
-POLLNOW es una plataforma de votación anónima y gestión de eventos diseñada para celebrar los momentos, los memes y las leyendas. Con una arquitectura moderna y un enfoque en la seguridad y la privacidad, POLLNOW permite a los usuarios crear, gestionar y participar en eventos de votación social.
+## 📜 Tooling & NPM Scripts
 
-## Features
-- **Votación Anónima:** Permite votar sin necesidad de registro, utilizando cookies y hashes para prevenir votos duplicados.
-- **Control Temporal:** Implementa un sistema de control temporal para asegurar que los resultados no se revelen antes de tiempo.
-- **Panel de Administración:** Herramientas avanzadas para gestionar participantes y encuestas.
-- **Seguridad y Privacidad:** Utiliza técnicas avanzadas para proteger la privacidad de los votantes y los organizadores de eventos.
-- **Integración con Stripe:** Procesa pagos y suscripciones de manera segura y eficiente.
+The project defines a set of scripts for development, database workflows, and quality checks (from `package.json`):
 
-## Tech Stack
-- **Programming Language:** TypeScript
-- **Frameworks, Libraries, and Tools:**
-  - Next.js
-  - Prisma
-  - Tailwind CSS
-  - Framer Motion
-  - Stripe
-  - Zod
-  - Date-fns
-  - Canvas-confetti
-  - Lucide-react
-  - React
-  - React-dom
-  - Resend
-  - Tailwind-merge
-  - Use-debounce
-  - Bcryptjs
-  - Jest
-  - ESLint
-  - TypeScript
+* `dev` – Development server
+* `prodev` – Development with production-like settings
+* `build` – Next.js production build
+* `start` – Start the production server
+* `lint` – Run ESLint
 
-## Installation
+Database-related scripts:
 
-### Prerequisites
-- Node.js 18 o superior
-- PostgreSQL
+* `db:reset` – Reset and reseed the database
+* `db:push` – `prisma db push`
+* `db:seed` – Execute `prisma/seed.ts`
+* `db:studio` – Launch Prisma Studio
+* `db:migrate` – Apply migrations
 
-### Quick Start
-```bash
-# Clonar el repositorio
-git clone <URL_del_repositorio>
-
-# Instalar dependencias
-npm install
-
-# Configurar variables de entorno
-cp .env.example .env
-
-# Iniciar la base de datos
-npm run db:reset
-
-# Iniciar el servidor
-npm run dev
-```
-
-### Alternative Installation Methods
-- **Docker:** [Instrucciones de Docker](https://github.com/user/your-repo/blob/main/Dockerfile)
-- **Package Managers:** [Instrucciones de Package Managers](https://github.com/user/your-repo/blob/main/package.json)
-
-## Usage
-
-### Basic Usage
-```typescript
-// Ejemplo de uso básico
-import { createEvent } from "@/app/lib/dashboard-actions";
-
-const formData = new FormData();
-formData.append('title', 'Mi Evento');
-formData.append('description', 'Descripción del evento');
-
-createEvent(formData)
-  .then((res) => {
-    if (res.success) {
-      console.log('Evento creado con éxito');
-    } else {
-      console.error('Error al crear el evento');
-    }
-  })
-  .catch((error) => {
-    console.error('Error:', error);
-  });
-```
-
-
-## Technical Documentation
-
-### Architecture Overview
-
-The `POLLNOW` project is a full-stack web application built using modern technologies and frameworks. The architecture is designed to be scalable, secure, and user-friendly. The primary components of the architecture include:
-
-- **Frontend:** Built using Next.js 16 with React and TypeScript.
-- **Backend:** Utilizes Node.js with Express and Next.js API routes.
-- **Database:** PostgreSQL with Prisma as the ORM.
-- **Authentication:** NextAuth.js for handling user authentication.
-- **Styling:** Tailwind CSS for styling the application.
-- **Deployment:** Vercel for hosting and edge middleware support.
-
-### Setup & Installation
-
-To set up and install the project, follow these steps:
-
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/user-attachments/assets/dbb8b9c7-f4cd-4e85-a1b7-07bb7a54937b
-   cd POLLNOW
-   ```
-
-2. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Set Up Environment Variables:**
-   Create a `.env` file in the root directory and add the following environment variables:
-   ```env
-   DATABASE_URL=your_database_url
-   STRIPE_SECRET_KEY=your_stripe_secret_key
-   STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
-   ...
-   ```
-
-4. **Run the Development Server:**
-   ```bash
-   npm run dev
-   ```
-
-### API Documentation
-
-The project includes several API endpoints for various functionalities. Below is a brief overview of the main API endpoints:
-
-- **Authentication:**
-  - `POST /api/auth/[...nextauth]`: Handles user authentication using NextAuth.js.
-
-- **Polls:**
-  - `POST /api/polls`: Creates a new poll.
-  - `GET /api/polls/[id]`: Retrieves a specific poll by ID.
-  - `POST /api/polls/[id]/vote`: Casts a vote for a specific poll.
-  - `GET /api/polls/[id]/results`: Retrieves the results of a specific poll.
-
-- **Webhooks:**
-  - `POST /api/webhooks/stripe`: Handles Stripe webhooks for payment processing.
-
-### Database Schema
-
-The project uses Prisma to interact with the PostgreSQL database. The main entities and their relationships are as follows:
-
-- **Participant:** Represents a participant in the polls.
-- **Poll:** Represents a poll or category.
-- **Option:** Represents an option within a poll.
-- **Vote:** Represents a vote cast by a participant.
-
-### Configuration
-
-The project uses several configuration files to manage settings and environment variables. Key configuration files include:
-
-- **`next.config.ts`:** Configuration for Next.js, including image settings and custom server configurations.
-- **`prisma.config.ts`:** Configuration for Prisma, including database connection settings.
-- **`tsconfig.json`:** TypeScript configuration for the project.
-
-### Development Guidelines
-
-To ensure a smooth development experience, follow these guidelines:
-
-- **Code Style:** Follow the project's code style guidelines, which are based on Airbnb's JavaScript style guide.
-- **Testing:** Write unit tests for your components and API routes using Jest and React Testing Library.
-- **Linting:** Use ESLint to lint your code and ensure it adheres to the project's style guidelines.
-- **Version Control:** Use Git for version control and follow the project's branching strategy.
-
-### Deployment Instructions
-
-To deploy the project, follow these steps:
-
-1. **Build the Project:**
-   ```bash
-   npm run build
-   ```
-
-2. **Deploy to Vercel:**
-   - Push the code to your GitHub repository.
-   - Connect your GitHub repository to Vercel.
-   - Deploy the project using Vercel's deployment settings.
-
-3. **Environment Variables:**
-   - Set the necessary environment variables in the Vercel dashboard.
-
-4. **Monitoring and Logging:**
-   - Use Vercel's monitoring and logging tools to monitor the application's performance and troubleshoot any issues.
-
-By following these guidelines, you can effectively set up, develop, and deploy the `POLLNOW` project.
-
+These scripts are used throughout the development workflow to iterate on both schema and application behavior.
 
 ---
 
-## Business Requirements Document
+## 📁 Project Structure (High-Level)
 
-### 1. Executive Summary
-- **Project Overview:** The "POLLNOW" project is a web application designed to facilitate anonymous voting and event management for groups. The application is built using modern web technologies and follows a serverless architecture.
-- **Business Objectives:** The primary goal is to create a platform that allows users to create and manage events, with a focus on ensuring the integrity and anonymity of the voting process.
-- **Expected Outcomes:** The application aims to provide a seamless user experience, with features such as anonymous voting, control over voting periods, and a minimalistic dark mode design.
+```text
+.
+├── prisma/
+│   ├── migrations/          # Full migration history
+│   ├── schema.prisma        # Main Prisma schema
+│   └── seed.ts              # Seed script
+├── public/                  # Static assets
+├── src/
+│   ├── app/
+│   │   ├── admin/           # Admin dashboard
+│   │   ├── api/             # API routes (auth, polls, support, webhooks)
+│   │   ├── auth/            # Email verification flow
+│   │   ├── dashboard/       # User dashboard & event management
+│   │   ├── e/[slug]/        # Public voting flow for events
+│   │   ├── polls/           # Public poll discovery & results
+│   │   ├── login/           # Login page
+│   │   ├── logout/          # Logged-in guard explanation page
+│   │   ├── register/        # Registration page
+│   │   ├── premium/         # Pricing / subscriptions
+│   │   ├── legal/           # Legal pages (terms, privacy, cookies)
+│   │   ├── about/           # About page
+│   │   ├── maintenance/     # Maintenance / holding page
+│   │   └── page.tsx         # Landing page
+│   ├── components/
+│   │   ├── dashboard/       # Dashboard components (tabs, forms, stats, lists)
+│   │   ├── admin/           # Admin-only UI
+│   │   ├── polls/           # Public poll UI
+│   │   ├── premium/         # Billing & pricing components
+│   │   ├── home/            # Landing, hero, 3D award mockup
+│   │   └── shared UI        # Navbar, forms, confetti, etc.
+│   ├── lib/
+│   │   ├── prisma.ts        # Prisma client singleton
+│   │   ├── config.ts        # App configuration
+│   │   ├── plans.ts         # Plan definitions
+│   │   ├── tokens.ts        # Token generation helpers
+│   │   ├── mail.ts          # Email sending helpers
+│   │   ├── validations.ts   # Zod schemas
+│   │   ├── countResults.ts  # Result aggregation helpers
+│   │   ├── *_actions.ts     # Server Actions for each domain area
+│   │   └── stripe-actions.ts# Stripe integration helpers
+│   ├── middleware.ts        # Route guarding & cross-cutting concerns
+│   └── types/next-auth.d.ts # NextAuth type augmentation
+└── reset-password.ts        # Standalone entry for password reset
+```
 
-### 2. Project Scope
-- **In-scope Features and Functionalities:**
-  - Anonymous voting system
-  - Event creation and management
-  - Control over voting periods
-  - Dark mode design
-  - Integration with third-party services (e.g., Stripe for payments)
-- **Out-of-scope Items:**
-  - Advanced analytics and reporting
-  - Mobile application
-  - Social media integration
-- **Key Assumptions:**
-  - Users have basic knowledge of web applications
-  - Users will have access to a stable internet connection
+---
 
-### 3. Business Requirements
-- **Functional Requirements:**
-  - **Anonymous Voting:** Users should be able to vote anonymously without requiring registration.
-  - **Event Creation:** Users should be able to create events with specific voting periods.
-  - **Event Management:** Users should be able to manage events, including adding participants and polls.
-  - **Dark Mode:** The application should have a dark mode design for better user experience.
-  - **Integration with Stripe:** The application should integrate with Stripe for handling payments.
-- **Non-functional Requirements:**
-  - **Performance:** The application should load quickly and handle a large number of concurrent users.
-  - **Security:** The application should ensure the security and privacy of user data.
-  - **Usability:** The application should be easy to use and navigate.
-- **User Stories:**
-  - **As a user, I want to create an event so that I can manage my friends' voting.**
-  - **As a user, I want to vote anonymously so that my votes are not traced.**
-  - **As a user, I want to see the results of the voting so that I can know the winner.**
+## ✅ Testing & Quality
 
-### 4. Technical Architecture Overview
-- **High-level System Architecture:**
-  - **Frontend:** Built using Next.js with React and TypeScript.
-  - **Backend:** Built using Node.js with Express and TypeScript.
-  - **Database:** PostgreSQL with Prisma ORM.
-  - **Authentication:** NextAuth.js for handling user authentication.
-  - **Payment Processing:** Stripe for handling payments.
-- **Technology Stack:**
-  - **Frontend:** React, Next.js, TypeScript, Tailwind CSS
-  - **Backend:** Node.js, Express, TypeScript
-  - **Database:** PostgreSQL, Prisma
-  - **Authentication:** NextAuth.js
-  - **Payment Processing:** Stripe
-- **Integration Points:**
-  - **APIs:** RESTful APIs for communication between frontend and backend.
-  - **Webhooks:** Stripe webhooks for handling payment events.
+* `src/__test__/results.test.ts` covers result aggregation logic.
+* ESLint is configured via `eslint.config.mjs`.
+* TypeScript is used across the entire codebase (`strict`-oriented setup).
+* The codebase is organized to keep **UI**, **server actions**, and **business logic** cleanly separated, making it easier to extend or refactor.
 
-### 5. User Personas & Use Cases
-- **Target Users:**
-  - **Event Organizers:** Users who create and manage events.
-  - **Voters:** Users who participate in the voting process.
-- **Primary Use Cases:**
-  - **Event Creation:** Users create events with specific voting periods.
-  - **Anonymous Voting:** Users vote anonymously in the created events.
-  - **Event Management:** Users manage events, including adding participants and polls.
-- **User Journey Flows:**
-  - **Event Creation:** User logs in, creates an event, sets voting periods, and adds participants.
-  - **Anonymous Voting:** User navigates to the event, votes anonymously, and sees the results.
-  - **Event Management:** User manages events, including adding participants and polls, and views statistics.
+---
 
-### 6. Success Criteria
-- **Key Performance Indicators:**
-  - **User Engagement:** Number of active users and events created.
-  - **Voting Participation:** Number of votes cast per event.
-  - **Event Management:** Number of events managed by users.
-- **Acceptance Criteria:**
-  - **Anonymous Voting:** Users can vote anonymously without registration.
-  - **Event Creation:** Users can create events with specific voting periods.
-  - **Event Management:** Users can manage events, including adding participants and polls.
-- **Business Value Metrics:**
-  - **Revenue:** Revenue generated from premium subscriptions.
-  - **User Retention:** Number of returning users.
-  - **User Satisfaction:** Feedback from users on the application's usability and features.
+## 🎓 Learning Focus
 
-### 7. Implementation Timeline
-- **High-level Milestones:**
-  - **Phase 1: Planning and Design (2 weeks)**
-    - Define project scope and requirements.
-    - Design the architecture and user interface.
-  - **Phase 2: Development (8 weeks)**
-    - Develop the frontend and backend.
-    - Implement the anonymous voting system.
-    - Integrate with Stripe for payment processing.
-  - **Phase 3: Testing and Quality Assurance (2 weeks)**
-    - Conduct unit and integration testing.
-    - Perform user acceptance testing.
-  - **Phase 4: Deployment and Launch (1 week)**
-    - Deploy the application to production.
-    - Monitor and optimize performance.
-- **Dependencies:**
-  - **Third-party Services:** Stripe for payment processing.
-  - **Database:** PostgreSQL with Prisma ORM.
-- **Risk Considerations:**
-  - **Security Risks:** Ensure the security and privacy of user data.
-  - **Performance Risks:** Optimize the application for performance and scalability.
-  - **Integration Risks:** Ensure smooth integration with third-party services.
+This project served as a deep-dive into:
 
-This Business Requirements Document outlines the key aspects of the "POLLNOW" project, focusing on business value and user needs.
+* Designing a **non-trivial relational schema** (with many migrations and iterative improvements).
+* Structuring a large **Next.js App Router** application with:
+
+  * Multiple segments (public, dashboard, admin)
+  * Mixed Server/Client components
+  * Server Actions as the main mutation layer.
+* Implementing **secure anonymous voting** with:
+
+  * Cookie-based identity
+  * Hashing
+  * Duplicate prevention.
+* Adding **real subscription tiers** using Stripe and handling webhooks safely.
+* Building a real-world level **admin panel**, **support system**, and **notification layer**.
+* Polishing UX with motion, dark theme, and consistent component patterns.
+
+This repository is intended as a **complete, production-style reference** for a modern SaaS-like voting platform, showcasing how all these pieces can work together coherently in a single codebase.
+
+---
+
+Last update: 30/11/2025
+
+> Made with ♥️ by Rayelus
