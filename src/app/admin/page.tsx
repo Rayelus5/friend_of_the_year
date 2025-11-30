@@ -70,7 +70,7 @@ export default async function AdminDashboardPage() {
                         <h3 className="font-bold text-white">Actividad Reciente</h3>
                         <Link href="/admin/events" className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">Ver todo <ArrowRight size={12} /></Link>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         {latestEvents.map(e => (
                             <Link key={e.id} href={`/admin/events/${e.id}`} className="flex justify-between items-center p-3 border border-white/5 rounded-xl hover:bg-neutral-950 transition-colors duration-400 hover:border-white/10 group min-h-18 max-h-18">
                                 <div>
