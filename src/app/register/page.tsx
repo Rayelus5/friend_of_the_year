@@ -1,5 +1,6 @@
 import RegisterForm from '@/components/RegisterForm';
 import Link from 'next/link';
+import GoogleForm from '@/components/GoogleForm';
 
 export default function RegisterPage() {
     return (
@@ -23,8 +24,19 @@ export default function RegisterPage() {
                     <p className="text-gray-400">Únete para organizar tus propios eventos digitales en Pollnow.</p>
                 </div>
 
+                {/* Formulario */}
                 <div className="bg-neutral-900/50 border border-white/10 backdrop-blur-xl p-8 rounded-3xl shadow-2xl hover:border-blue-500/30 hover:shadow-blue-400/20 hover:shadow-[0_0_100px] transition-all duration-500">
                     <RegisterForm />
+
+                    {/* Separador (para futuro Google Login) */}
+                    <div className="my-4 flex items-center gap-4">
+                        <div className="h-px bg-white/10 flex-1" />
+                        <span className="text-gray-500 text-xs uppercase">O continúa con</span>
+                        <div className="h-px bg-white/10 flex-1" />
+                    </div>
+
+                    {/* Botón Google (Placeholder visual por ahora) */}
+                    <GoogleForm />
                 </div>
 
                 <p className="text-center text-gray-500 text-sm mt-8">

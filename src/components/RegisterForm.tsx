@@ -94,7 +94,7 @@ export default function RegisterForm() {
             <button
                 type="submit"
                 disabled={isPending}
-                className="w-full bg-white text-black font-bold py-4 rounded-xl shadow-lg hover:bg-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full bg-gradient-to-r from-blue-600 to-sky-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
                 {isPending ? 'Creando cuenta...' : 'Registrarse Gratis'}
             </button>
