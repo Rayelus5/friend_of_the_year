@@ -67,7 +67,7 @@ export default async function EventDashboardPage({ params }: Props) {
                             Dashboard
                         </Link>
                         <span>/</span>
-                        <span className="truncate w-50">{event.title}</span>
+                        <span className="truncate max-w-50">{event.title}</span>
                         {/* Badge de Plan (del usuario logueado) */}
                         <span
                             className={clsx(
