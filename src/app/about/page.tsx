@@ -80,7 +80,7 @@ export default function AboutPage() {
                             <div className="relative aspect-square md:aspect-[4/5] rounded-2xl overflow-hidden border border-white/10 bg-neutral-900">
                                 {/* REEMPLAZA ESTA URL CON TU FOTO REAL */}
                                 <Image
-                                    src="/rayelus-img2.jpg"
+                                    src="/rayelus-img.jpg"
                                     alt="Rayelus Image"
                                     fill
                                     className="object-cover transition-all duration-700 group-hover:scale-105 grayscale hover:grayscale-50"

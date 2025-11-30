@@ -170,7 +170,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
             </div>
 
 
-            <div className="max-w-4xl space-y-8">
+            <div className="space-y-8">
                 {/* TARJETA 1: PERFIL PÚBLICO */}
                 <div className="bg-neutral-900/50 border border-white/10 rounded-2xl p-8">
                     <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">

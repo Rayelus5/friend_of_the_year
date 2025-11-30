@@ -244,7 +244,7 @@ function ProfileTab({
     };
 
     return (
-        <section className="max-w-4xl space-y-8">
+        <section className="max-w-7xl space-y-8">
             {/* TARJETA DE SUSCRIPCIÓN */}
             <SubscriptionCard user={subData} />
 
