@@ -49,7 +49,7 @@ export default function NavbarClient({ user }: NavbarProps) {
                 <div className="hidden md:flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-3">
-                            <Link href="/dashboard/profile" className="flex items-center gap-3 p-1 pr-4 rounded-full hover:bg-white/10 transition-colors group border border-white/10">
+                            <Link href="/dashboard?tab=profile" className="flex items-center gap-3 p-1 pr-4 rounded-full hover:bg-white/10 transition-colors group border border-white/10">
                                 <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 relative">
                                     {user.image ? (
                                         <img src={user.image} alt="Avatar" className="object-cover" />
@@ -126,7 +126,7 @@ export default function NavbarClient({ user }: NavbarProps) {
                         {user ? (
                             <div className="flex flex-col gap-4">
                                 <Link
-                                    href="/dashboard/profile"
+                                    href="/dashboard?tab=profile"
                                     onClick={closeMenu}
                                     className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                                 >

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { clsx } from "clsx";
 import CreateEventButton from "@/components/dashboard/CreateEventButton";
 import CreateTicketButton from "@/components/dashboard/CreateTicketButton";
@@ -11,8 +12,9 @@ import {
 } from "@/app/lib/user-notification-actions";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import Link from "next/link";
 import { BookCheck } from "lucide-react";
+import ProfileForm from "@/components/dashboard/ProfileForm";
+import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 
 type DashboardTabsProps = {
     user: {
@@ -20,8 +22,13 @@ type DashboardTabsProps = {
         name: string | null;
         email: string;
         username: string;
+        image: string | null;
         subscriptionStatus: string | null;
+        stripePriceId: string | null;
+        subscriptionEndDate: Date | null;
+        cancelAtPeriodEnd: boolean | null;
         createdAt: Date;
+        hasPassword: boolean;
     };
     plan: {
         slug: string;
@@ -63,7 +70,6 @@ export default function DashboardTabs({
     notifications,
     supportChats,
 }: DashboardTabsProps) {
-    const [activeTab, setActiveTab] = useState<TabId>("events");
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
     const tabs: { id: TabId; label: string; badge?: number }[] = [
@@ -74,8 +80,20 @@ export default function DashboardTabs({
             badge: notifications.filter((n) => !n.isRead).length || undefined,
         },
         { id: "support", label: "Soporte" },
-        // { id: "profile", label: "Perfil" },
+        { id: "profile", label: "Mi Cuenta" },
     ];
+
+    const searchParams = useSearchParams();
+    const initialTab = (searchParams.get("tab") as TabId) || "events";
+
+    const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+
+    useEffect(() => {
+        const tab = searchParams.get("tab");
+        if (tab && tab !== activeTab) {
+            setActiveTab(tab as TabId);
+        }
+    }, [searchParams]);
 
     return (
         <div>
@@ -105,18 +123,6 @@ export default function DashboardTabs({
                         )}
                     </button>
                 ))}
-
-                <Link href="/dashboard/profile">
-                    <button
-                        className={clsx(
-                            "relative px-5 py-3 text-sm font-bold transition-colors whitespace-nowrap cursor-pointer text-gray-400 hover:text-white"
-                        )}
-                    >
-                        <span className="flex items-center gap-2">
-                            Mi Cuenta
-                        </span>
-                    </button>
-                </Link>
             </div>
 
             {/* Contenido */}
@@ -131,10 +137,9 @@ export default function DashboardTabs({
                     />
                 )}
 
-                {/* {activeTab === "profile" && (
-                    
+                {activeTab === "profile" && (
                     <ProfileTab user={user} plan={plan} />
-                )} */}
+                )}
 
                 {activeTab === "notifications" && (
                     <NotificationsTab notifications={notifications} />
@@ -186,7 +191,6 @@ function EventsTab({
                     <CreateEventButton
                         planSlug={planSlug}
                         user={user}
-                        // ✨ nuevo prop opcional para controlar loader desde dentro del botón
                         onCreatingChange={onCreatingChange}
                     />
                 </div>
@@ -217,57 +221,38 @@ function EventsTab({
 
 // ========== TAB: PERFIL ==========
 
-// function ProfileTab({
-//     user,
-//     plan,
-// }: {
-//     user: DashboardTabsProps["user"];
-//     plan: DashboardTabsProps["plan"];
-// }) {
-//     return (
-//         <section className="grid md:grid-cols-2 gap-6">
-//             <div className="p-6 rounded-2xl border border-white/10 bg-neutral-900/60">
-//                 <h2 className="text-lg font-bold mb-4">Información de perfil</h2>
-//                 <dl className="space-y-2 text-sm">
-//                     <div className="flex justify-between">
-//                         <dt className="text-gray-400">Nombre</dt>
-//                         <dd className="text-white">{user.name}</dd>
-//                     </div>
-//                     <div className="flex justify-between">
-//                         <dt className="text-gray-400">Usuario</dt>
-//                         <dd className="text-white">@{user.username}</dd>
-//                     </div>
-//                     <div className="flex justify-between">
-//                         <dt className="text-gray-400">Email</dt>
-//                         <dd className="text-white">{user.email}</dd>
-//                     </div>
-//                     <div className="flex justify-between">
-//                         <dt className="text-gray-400">Cuenta creada</dt>
-//                         <dd className="text-white">
-//                             {new Intl.DateTimeFormat("es-ES", {
-//                                 dateStyle: "medium",
-//                             }).format(user.createdAt)}
-//                         </dd>
-//                     </div>
-//                 </dl>
-//             </div>
+function ProfileTab({
+    user,
+    plan,
+}: {
+    user: DashboardTabsProps["user"];
+    plan: DashboardTabsProps["plan"];
+}) {
+    const profileUserData = {
+        name: user.name,
+        username: user.username,
+        image: user.image,
+        email: user.email,
+        hasPassword: user.hasPassword,
+    };
 
-//             <div className="p-6 rounded-2xl border border-blue-500/20 bg-blue-500/5">
-//                 <h2 className="text-lg font-bold mb-4">Plan actual</h2>
-//                 <p className="text-sm text-gray-300 mb-2">
-//                     Plan <span className="font-semibold">{plan.name}</span>
-//                 </p>
-//                 <p className="text-xs text-gray-400">
-//                     Estado suscripción:{" "}
-//                     <span className="font-semibold">
-//                         {user.subscriptionStatus ?? "free"}
-//                     </span>
-//                 </p>
-//                 {/* Aquí luego puedes meter CTA para upgrade, gestión de billing, etc. */}
-//             </div>
-//         </section>
-//     );
-// }
+    const subData = {
+        subscriptionStatus: user.subscriptionStatus,
+        stripePriceId: user.stripePriceId,
+        subscriptionEndDate: user.subscriptionEndDate,
+        cancelAtPeriodEnd: user.cancelAtPeriodEnd,
+    };
+
+    return (
+        <section className="max-w-4xl space-y-8">
+            {/* TARJETA DE SUSCRIPCIÓN */}
+            <SubscriptionCard user={subData} />
+
+            {/* FORMULARIOS DE PERFIL */}
+            <ProfileForm user={profileUserData} />
+        </section>
+    );
+}
 
 // ========== TAB: NOTIFICACIONES ==========
 
@@ -296,7 +281,6 @@ function NotificationsTab({
                 </div>
                 <div className="flex justify-end">
                     <form action={markAllUserNotificationsRead}>
-                        
                         <button
                             type="submit"
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-full font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2 cursor-pointer"
@@ -338,7 +322,6 @@ function NotificationsTab({
                                 </a>
                             )}
 
-                            {/* Botón individual: marcar como leída */}
                             {!n.isRead && (
                                 <form action={markUserNotificationRead.bind(null, n.id)}>
                                     <button
@@ -356,7 +339,6 @@ function NotificationsTab({
         </div>
     );
 }
-
 
 // ========== TAB: SOPORTE ==========
 
@@ -378,7 +360,6 @@ function SupportTab({
                     <CreateTicketButton />
                 </div>
             </div>
-                
 
             {supportChats.length === 0 && (
                 <div className="py-10 text-center text-sm text-gray-500 border border-dashed border-white/10 rounded-2xl">

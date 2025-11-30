@@ -1,8 +1,17 @@
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import RegisterForm from '@/components/RegisterForm';
 import Link from 'next/link';
 import GoogleForm from '@/components/GoogleForm';
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+    const session = await auth();
+
+    // Si ya hay usuario logueado -> redirigir a /logout
+    if (session?.user) {
+        redirect("/logout");
+    }
+
     return (
         <main className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden selection:bg-blue-500/30 pt-5 pb-5">
 
@@ -35,7 +44,7 @@ export default function RegisterPage() {
                         <div className="h-px bg-white/10 flex-1" />
                     </div>
 
-                    {/* Botón Google (Placeholder visual por ahora) */}
+                    {/* Botón Google */}
                     <GoogleForm />
                 </div>
 

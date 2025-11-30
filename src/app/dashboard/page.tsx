@@ -25,7 +25,7 @@ export default async function DashboardPage() {
             },
         }),
         prisma.notification.findMany({
-            where: { userId: session.user.id }, // notificaciones dirigidas al usuario
+            where: { userId: session.user.id },
             orderBy: { createdAt: "desc" },
         }),
         prisma.supportChat.findMany({
@@ -33,6 +33,21 @@ export default async function DashboardPage() {
             orderBy: { createdAt: "desc" },
         }),
     ]);
+
+    // Adaptamos el usuario de Prisma al shape que espera DashboardTabs
+    const dashboardUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email!, // en tu modelo probablemente es NOT NULL
+        username: user.username || "", // por si es null en la BD
+        image: user.image,
+        subscriptionStatus: user.subscriptionStatus,
+        stripePriceId: user.stripePriceId,
+        subscriptionEndDate: user.subscriptionEndDate,
+        cancelAtPeriodEnd: user.cancelAtPeriodEnd,
+        createdAt: user.createdAt,
+        hasPassword: !!user.passwordHash,
+    };
 
     return (
         <main className="min-h-screen bg-black text-white px-6 md:px-12 py-8">
@@ -45,7 +60,7 @@ export default async function DashboardPage() {
                 </header>
 
                 <DashboardTabs
-                    user={user}
+                    user={dashboardUser}
                     plan={plan}
                     events={events}
                     notifications={notifications}
