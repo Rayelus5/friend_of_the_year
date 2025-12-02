@@ -16,7 +16,7 @@ const PRICING_DATA = [
         title: "Free",
         price: "GRATIS",
         description: "Prueba la experiencia sin compromiso.",
-        features: ["1 Evento Activo", "5 Categorías máximo por evento", "12 Participantes máximo por evento", "Votación Anónima", "Resultados Modo Gala", "Sin publicidad"],
+        features: ["1 Evento Activo", "5 Categorías máximo por evento", "12 Participantes máximo por evento", "Votación Anónima", "Resultados Modo Gala", "Con publicidad"],
         priceId: null
     },
     {
@@ -35,7 +35,7 @@ const PRICING_DATA = [
         price: "12.99€",
         period: "/mes",
         description: "Para organizadores de eventos serios.",
-        features: ["10 Eventos Activos", "15 Categorías máximo por evento", "50 Participantes máximo por evento", "Desactivación de voto anónimo", "Estadísticas Avanzadas", "Todo lo de Premium"],
+        features: ["10 Eventos Activos", "15 Categorías máximo por evento", "50 Participantes máximo por evento", "Desactivación de voto anónimo", "Estadísticas Avanzadas", "Sin publicidad", "Todo lo de Premium"],
         priceId: PLANS.PLUS.priceId
     },
 ];
@@ -228,6 +228,18 @@ export default function PricingSection({ currentPlanSlug }: { currentPlanSlug: s
                                         <Check size={10} strokeWidth={3} />
                                     </div>
                                     Soporte prioritario 1:1
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <div className="mt-0.5 p-1 rounded-full bg-indigo-600/20 text-indigo-400">
+                                        <Check size={10} strokeWidth={3} />
+                                    </div>
+                                    Sin publicidad
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <div className="mt-0.5 p-1 rounded-full bg-indigo-600/20 text-indigo-400">
+                                        <Check size={10} strokeWidth={3} />
+                                    </div>
+                                    Adaptamos el servicio a tu presupuesto
                                 </li>
                             </ul>
                         </div>

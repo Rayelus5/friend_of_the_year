@@ -5,11 +5,13 @@ import { motion, Variants, AnimatePresence } from "framer-motion";
 import { Trophy, Lock, Palette, ArrowRight, Sparkles, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { clsx } from "clsx";
-import LiquidGlass from 'liquid-glass-react'
-import { text } from "stream/consumers";
-import { AwardMockup3D } from "@/components/home/AwardMockup3D";
-import next from "next";
-import { is } from "date-fns/locale";
+// import LiquidGlass from 'liquid-glass-react'
+// import { text } from "stream/consumers";
+// import { AwardMockup3D } from "@/components/home/AwardMockup3D";
+// import next from "next";
+// import { is } from "date-fns/locale";
+import { CustomAdBanner } from "../ads/CustomAdBanner";
+import { CustomPollnowBanner } from "../ads/CustomPollnowBanner";
 
 // --- DATOS DE ANIMACIÓN DEL TÍTULO ---
 const WORDS = [
@@ -91,7 +93,7 @@ const featureContainerVariants: Variants = {
     }
 };
 
-export default function LandingClient( { session } : { session: any } ) {
+export default function LandingClient( { session, showAds=true } : { session: any, showAds?: boolean } ) {
     const [index, setIndex] = useState(0);
 
     const loggedIn = session?.user?.id ? true : false;
@@ -110,7 +112,7 @@ export default function LandingClient( { session } : { session: any } ) {
     const currentWord = WORDS[index];
 
     return (
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden bg-neutral-950">
 
             {/* --- HERO SECTION --- */}
             <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 max-w-7xl mx-auto flex flex-col items-center text-center z-10">
@@ -490,14 +492,42 @@ export default function LandingClient( { session } : { session: any } ) {
                         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black via-black/85 to-transparent" />
                     </motion.div>
                     */}
-
+                    {showAds ? (
+                        <motion.div
+                            className="hidden lg:flex mt-36 relative w-full max-w-7xl rounded-3xl border-2 border-white/20 bg-black overflow-hidden z-10 [perspective:1400px]"
+                            variants={{
+                                visible: { scale: 1, opacity: 1 },
+                                hidden: { scale: 0.96, opacity: 0 },
+                            }}
+                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true }}
+                        >
+                            <CustomAdBanner />
+                        </motion.div>
+                        ) : (
+                            <motion.div
+                                className="hidden lg:flex mt-36 relative w-full max-w-7xl rounded-3xl border-2 border-white/20 bg-black overflow-hidden z-10 [perspective:1400px]"
+                                variants={{
+                                    visible: { scale: 1, opacity: 1 },
+                                    hidden: { scale: 0.96, opacity: 0 },
+                                }}
+                                transition={{ duration: 0.8, ease: "easeInOut" }}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true }}
+                            >
+                                <CustomPollnowBanner />
+                            </motion.div>
+                    )}       
                 </motion.div>
             </section>
 
             
 
             {/* --- FEATURES SECTION --- */}
-            <section className="py-32 bg-neutral-950 border-t border-white/5 relative">
+            <section className="py-10 bg-neutral-950 relative">
                 <div className="max-w-7xl mx-auto px-6">
                     <motion.div
                         variants={featureContainerVariants}

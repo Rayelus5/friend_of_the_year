@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import HomeHero from "@/components/HomeHero";
 import { Lock } from "lucide-react"; // Necesitarás importar iconos si usas la UI de bloqueo
 import { auth } from "@/auth";
+import { getCurrentUserPlan } from "@/lib/user-plan";
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -26,6 +27,9 @@ export default async function EventLobbyPage({ params, searchParams }: Props) {
             }
         }
     });
+
+    const plan = await getCurrentUserPlan();
+    const showAds = plan.slug === "free" || plan.slug === "premium"; // solo UNLIMITED NO ven anuncios
 
     if (!event) notFound();
 
@@ -68,6 +72,7 @@ export default async function EventLobbyPage({ params, searchParams }: Props) {
             description={event.description || ""}
             eventId={event.id}
             slug={event.slug}
+            showAds={showAds}
         />
     );
 }

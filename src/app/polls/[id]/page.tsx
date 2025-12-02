@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import VotingForm from "@/components/VotingForm";
 import { cookies } from 'next/headers';
+import { getCurrentUserPlan } from "@/lib/user-plan";
 
 type Props = {
     params: Promise<{ id: string }>
@@ -23,6 +24,9 @@ export default async function PollPage({ params }: Props) {
             event: { select: { id: true, slug: true } } // Necesitamos el ID del evento padre
         },
     });
+
+    const plan = await getCurrentUserPlan();
+    const showAds = plan.slug === "free" || plan.slug === "premium"; // solo UNLIMITED NO ven anuncios
 
     if (!poll) notFound();
 
@@ -76,6 +80,7 @@ export default async function PollPage({ params }: Props) {
                 initialHasVoted={hasVoted}
                 initialSelected={initialSelectedOptions}
                 eventSlug={poll.event.slug}
+                showAds={showAds}
             />
         </main>
     );

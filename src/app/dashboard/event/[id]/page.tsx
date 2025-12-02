@@ -96,7 +96,7 @@ export default async function EventDashboardPage({ params }: Props) {
                     }
                     // PESTAÑA 2: Participantes
                     participants={
-                        <div className="max-w-5xl tour-participants-section">
+                        <div className="max-w-7xl tour-participants-section">
                             <div className="mb-6 flex gap-2 items-center">
                                 <UsersRound className="w-6 h-6 text-gray-400" />
                                 <h2 className="text-xl font-bold">
@@ -112,7 +112,7 @@ export default async function EventDashboardPage({ params }: Props) {
                     }
                     // PESTAÑA 3: Encuestas
                     polls={
-                        <div className="max-w-5xl tour-polls-section">
+                        <div className="max-w-7xl tour-polls-section">
                             <div className="mb-6 flex gap-2 items-center">
                                 <Folders className="w-6 h-6 text-gray-400" />
                                 <h2 className="text-xl font-bold">

@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import GlobalResultsClient from "@/components/GlobalResultsClient";
 import { auth } from "@/auth";
+import { getCurrentUserPlan } from "@/lib/user-plan";
+
 
 type Props = {
     params: Promise<{ slug: string }>
@@ -33,6 +35,9 @@ export default async function EventGalaPage({ params }: Props) {
     const galaDate = event.galaDate || new Date('2030-01-01');
     const now = new Date();
 
+    const plan = await getCurrentUserPlan();
+    const showAds = plan.slug === "free" || plan.slug === "premium"; // solo UNLIMITED NO ven anuncios
+
     // Si intentan entrar antes de tiempo, los mandamos al Lobby del evento
     if (now < galaDate) {
         redirect(`/e/${slug}`);
@@ -40,5 +45,5 @@ export default async function EventGalaPage({ params }: Props) {
 
     // 3. Renderizar Cliente (Reutilizamos tu componente visual)
     // Le pasamos también el slug para que el botón "Volver" sepa a dónde ir
-    return <GlobalResultsClient polls={event.polls} eventSlug={slug} />;
+    return <GlobalResultsClient polls={event.polls} eventSlug={slug} showAds={showAds} />;
 }

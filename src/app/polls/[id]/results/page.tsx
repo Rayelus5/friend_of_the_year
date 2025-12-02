@@ -3,6 +3,7 @@ import { calculateResults } from "@/lib/countResults";
 import Link from "next/link";
 import Countdown from "@/components/Countdown";
 import ResultsClient from "@/components/ResultsClient"; // El componente animado
+import { getCurrentUserPlan } from "@/lib/user-plan";
 
 type Props = {
     params: Promise<{ id: string }>
@@ -22,6 +23,9 @@ export default async function ResultsPage({ params }: Props) {
         votes: { include: { voteOptions: true } }
         }
     });
+
+    const plan = await getCurrentUserPlan();
+    const showAds = plan.slug === "free" || plan.slug === "premium"; // solo UNLIMITED NO ven anuncios
 
     if (!poll) return (
         <div className="min-h-screen bg-black flex items-center justify-center text-gray-500">
@@ -100,7 +104,8 @@ export default async function ResultsPage({ params }: Props) {
         winners={winners}
         winnerImage={winnerImage}
         // Añadimos la URL de retorno correcta
-        backUrl={`/e/${poll.event.slug}/results`} 
+        backUrl={`/e/${poll.event.slug}/results`}
+        showAds={showAds}
         />
     );
 }
