@@ -4,6 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { MAINTENANCE_MODE } from "@/lib/config";
+import ChatBot from "@/components/ia/ChatBot";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,6 +31,8 @@ export default function RootLayout({
         <div className={showUI ? "pt-16" : ""}>
           {children}
         </div>
+
+        <ChatBot />
 
         {/* FOOTER (solo si no está en mantenimiento) */}
         {showUI && (
