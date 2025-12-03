@@ -56,7 +56,7 @@ export default function GlobalResultsClient({
     };
 
     return (
-        <div className="relative z-10 flex justify-center gap-6 bg-black text-white selection:bg-sky-500/30 min-h-screen">
+        <div className="relative z-10 flex justify-center bg-black text-white selection:bg-sky-500/30 min-h-screen">
             {/* BANNER IZQUIERDO (solo desktop grande) */}
             {showAds && (
                 <motion.aside

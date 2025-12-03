@@ -52,7 +52,7 @@ export default function HomeHero({
     const [loading, setLoading] = useState(false);
 
     return (
-        <div className="relative z-10 flex justify-center gap-6">
+        <div className="relative z-10 flex justify-center">
             {/* BANNER IZQUIERDO (solo desktop grande) */}
             {showAds && (
                 <motion.aside
@@ -80,7 +80,7 @@ export default function HomeHero({
 
                 {/* Content */}
                 <motion.div
-                    className="z-10 min-w-5xl max-w-5xl w-full px-6 text-center flex flex-col items-center"
+                    className="z-10 min-w-md max-w-6xl w-full px-6 text-center flex flex-col items-center"
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"

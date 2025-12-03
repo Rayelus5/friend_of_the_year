@@ -50,7 +50,7 @@ export default function ResultsClient({
     };
 
     return (
-        <div className="relative z-10 flex justify-center gap-6">
+        <div className="relative z-10 flex justify-center">
             {/* BANNER IZQUIERDO (solo desktop grande) */}
             {showAds && (
                 <motion.aside
@@ -129,8 +129,8 @@ export default function ResultsClient({
                                 <div className="inline-block relative max-w-full">
                                     <div className="absolute -inset-1 bg-blue-500/20 blur-lg rounded-full" />
                                     <h2 className="relative text-sm sm:text-base md:text-lg text-blue-200 font-light uppercase tracking-[0.2em] border-t border-b border-blue-500/30 py-2 sm:py-3 px-4 sm:px-6 break-words">
-                                        {winners[0].name.endsWith("a") ? "GANADORA" : "GANADOR"} DE{" "}
-                                        {pollDescription || "ESTA CATEGORÍA"}
+                                        {winners[0].name.endsWith("a") ? "GANADORA" : "GANADOR"} DE ESTA CATEGORÍA
+                                        {/* {pollDescription || "ESTA CATEGORÍA"} */}
                                     </h2>
                                 </div>
                             </div>

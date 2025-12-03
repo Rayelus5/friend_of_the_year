@@ -31,7 +31,7 @@ export default function CookiesPage() {
                         <p className="mt-1">
                             Son necesarias para que la web funcione y no pueden desactivarse.
                         </p>
-                        <ul className="mt-3 space-y-3">
+                        <ul className="mt-3 space-y-3 list-disc ml-6">
                             <li>
                                 <strong>voter_id:</strong> Esta cookie es fundamental para nuestro
                                 sistema de votación anónima. Asigna un identificador único aleatorio a tu
@@ -39,6 +39,27 @@ export default function CookiesPage() {
                                 contiene datos personales.
                                 <br />
                                 <em className="text-xs text-gray-500">Duración: 1 año.</em>
+                            </li>
+                            <li>
+                                <strong>voted_[poll.id]:</strong> Esta cookie es fundamental para nuestro
+                                sistema de votación anónima. Asigna un identificador único aleatorio a tu
+                                navegador para evitar que se vote múltiples veces en la misma categoría. No
+                                contiene datos personales.
+                                <br />
+                                <em className="text-xs text-gray-500">
+                                    Duración: Indefinido.
+                                </em>
+                                
+                            </li>
+                            <li>
+                                <strong>selected_[poll.id]:</strong> Esta cookie es fundamental para nuestro
+                                sistema de votación anónima. Asigna un identificador único a tu selección. No
+                                contiene datos personales.
+                                <br />
+                                <em className="text-xs text-gray-500">
+                                    Duración: Indefinido.
+                                </em>
+                                
                             </li>
                             <li>
                                 <strong>authjs.session-token:</strong> Se utiliza para mantener tu sesión

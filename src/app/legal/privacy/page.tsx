@@ -13,7 +13,7 @@ export default function PrivacyPage() {
 
             <section className="mt-10 space-y-3">
                 <h3>1. Responsable del Tratamiento</h3>
-                <p>
+                <p className="bg-neutral-800 p-4 rounded-2xl text-gray-400 border border-white/15">
                     <strong>Titular:</strong> Raimundo Palma Méndez (Rayelus)
                     <br />
                     <strong>DNI:</strong> 54184186G
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
                 <p>
                     Recopilamos diferentes tipos de información según tu interacción con la Plataforma:
                 </p>
-                <ul className="space-y-2">
+                <ul className="space-y-2 list-disc ml-6">
                     <li>
                         <strong>Usuarios Registrados:</strong> Nombre, dirección de correo electrónico,
                         contraseña (encriptada), imagen de perfil y datos de facturación procesados por
@@ -51,16 +51,24 @@ export default function PrivacyPage() {
 
             <section className="mt-10 space-y-4">
                 <h3>3. Finalidad del Tratamiento</h3>
-                <p>Usamos tus datos para:</p>
-                <ul className="space-y-2">
+                <b>Usamos tus datos para:</b>
+                <ul className="space-y-2 list-disc ml-6 mt-2">
                     <li>Gestionar tu cuenta de usuario y acceso al Dashboard.</li>
                     <li>Procesar pagos y suscripciones Premium a través de Stripe.</li>
                     <li>Permitir la creación, gestión y votación en eventos.</li>
                     <li>Prevenir fraudes y asegurar que cada persona vote una sola vez.</li>
+                    <li>Mejorar la experiencia de la Plataforma.</li>
                     <li>
                         Enviar comunicaciones transaccionales (ej: recuperación de contraseña,
                         confirmación de pago).
                     </li>
+                </ul>
+
+                <b>NO usamos tus datos para:</b>
+                <ul className="space-y-2 list-disc ml-6 mt-2">
+                    <li>Fines comerciales.</li>
+                    <li>Compartirlo con terceros, empresas o proyectos ajenos a la Plataforma.</li>
+                    <li>Entrenar modelos de inteligencia artificial.</li>
                 </ul>
             </section>
 

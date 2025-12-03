@@ -52,6 +52,9 @@ export default async function LoginPage() {
                     ¿No tienes cuenta? <Link href="/register" className="text-blue-500 hover:underline">Regístrate aquí</Link>
                 </p>
 
+                <p className="text-center text-gray-500 text-sm mt-8 opacity-70">
+                    Al registrarte o iniciar sesión en nuestra plataforma aceptas nuestros <Link href="/legal/terms" className="text-blue-500 hover:underline">T&eacute;rminos y Condiciones</Link> y nuestra <Link href="/legal/privacy" className="text-blue-500 hover:underline">Política de Privacidad</Link>.
+                </p>
             </div>
         </main>
     );

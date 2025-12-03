@@ -52,6 +52,10 @@ export default async function RegisterPage() {
                     ¿Ya tienes cuenta? <Link href="/login" className="text-blue-500 hover:underline">Iniciar sesión</Link>
                 </p>
 
+                <p className="text-center text-gray-500 text-sm mt-8 opacity-70">
+                    Al registrarte o iniciar sesión en nuestra plataforma aceptas nuestros <Link href="/legal/terms" className="text-blue-500 hover:underline">T&eacute;rminos y Condiciones</Link> y nuestra <Link href="/legal/privacy" className="text-blue-500 hover:underline">Política de Privacidad</Link>.
+                </p>
+
             </div>
         </main>
     );
