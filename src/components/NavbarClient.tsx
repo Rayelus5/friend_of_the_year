@@ -14,9 +14,10 @@ type NavbarProps = {
         name: string | null;
         image: string | null;
     } | null;
+    showPremium?: boolean;
 };
 
-export default function NavbarClient({ user }: NavbarProps) {
+export default function NavbarClient({ user, showPremium=true }: NavbarProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const pathname = usePathname();
 
@@ -40,7 +41,7 @@ export default function NavbarClient({ user }: NavbarProps) {
                     <NavLink href="/polls" active={pathname.startsWith("/polls")}>Events</NavLink>
                     <NavLink href="/dashboard" active={pathname.startsWith("/dashboard")}>Dashboard</NavLink>
                     <NavLink href="/premium" active={pathname.startsWith("/premium")}>
-                        <span className="text-indigo-400 drop-shadow-[0_0_8px_rgba(150,100,200,0.8)]">Premium</span>
+                        <span className={clsx("", showPremium ? "text-indigo-400 drop-shadow-[0_0_8px_rgba(150,100,200,0.8)]" : "text-gray-400")}>Premium</span>
                     </NavLink>
                     <NavLink href="/about" active={pathname === "/about"}>About</NavLink>
                 </div>
