@@ -179,69 +179,7 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
             {/* COLUMNA 1: FORMULARIO */}
             <div className="space-y-8">
 
-                {/* NUEVO: CAJA DE ESTADO DE PUBLICACIÓN */}
-                <div className={`p-6 rounded-xl border ${isApproved ? 'bg-green-900/20 border-green-500/30' :
-                    isPending ? 'bg-yellow-900/20 border-yellow-500/30' :
-                        isDenied ? 'bg-red-900/20 border-red-500/30' :
-                            'bg-neutral-900 border-white/10'
-                    }`}>
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                Estado:
-                                <span className={`uppercase tracking-wider text-sm px-2 py-0.5 rounded ${isApproved ? 'text-green-400 bg-green-500/10' :
-                                    isPending ? 'text-yellow-400 bg-yellow-500/10' :
-                                        isDenied ? 'text-red-400 bg-red-500/10' :
-                                            'text-gray-400 bg-gray-700/30'
-                                    }`}>
-                                    {isPending ? 'En Revisión' :
-                                        isApproved ? 'Aprobado' :
-                                            isDenied ? 'Rechazado' : 'Borrador'}
-                                </span>
-                            </h3>
-                            <p className="text-xs text-gray-400 mt-1">
-                                {isDraft && "El evento es privado. Solicita revisión para que aparezca en el buscador público."}
-                                {isPending && "Los moderadores están revisando tu evento. Te avisaremos pronto."}
-                                {isApproved && "¡Tu evento ha sido aprobado y puede ser publicado!"}
-                                {isDenied && "Tu solicitud fue denegada. Revisa el motivo abajo."}
-                            </p>
-                        </div>
-
-                        <div className="p-2 bg-black/20 rounded-full">
-                            {isPending ? <Clock className="text-yellow-500" /> :
-                                isApproved ? <CheckCircle className="text-green-500" /> :
-                                    isDenied ? <XCircle className="text-red-500" /> :
-                                        <Send className="text-gray-500" />}
-                        </div>
-                    </div>
-
-                    {/* MOTIVO DE RECHAZO */}
-                    {isDenied && currentEvent.reviewReason && (
-                        <div className="mb-4 p-3 bg-red-950/30 border border-red-500/20 rounded-lg">
-                            <p className="text-xs text-red-300 font-bold uppercase mb-1">Motivo del rechazo:</p>
-                            <p className="text-sm text-white">{currentEvent.reviewReason}</p>
-                        </div>
-                    )}
-
-                    {/* BOTÓN DE ACCIÓN */}
-                    {(isDraft || isDenied) && (
-                        <button
-                            onClick={handleOpenRequestModal}
-                            disabled={isRequesting}
-                            className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                            {isRequesting ? (
-                                <Bouncy size="20" color="black" />
-                            ) : (
-                                <>
-                                    <Send size={16} />
-                                    {isDenied ? "Corregir y Solicitar de Nuevo" : "Solicitar Publicación"}
-                                </>
-                            )}
-                        </button>
-                    )}
-
-                </div>
+                
 
                 {/* FORMULARIO ORIGINAL */}
                 <form action={handleFormSubmit} className="space-y-6 p-6 bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg tour-event-settings-card">
@@ -312,7 +250,7 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
                         <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-2">
                                 <label htmlFor="isAnonymous" className={`font-bold text-sm ${isUnlimited ? 'cursor-pointer text-white' : 'text-gray-400'}`}>Votación Anónima</label>
-                                {!isUnlimited && <span className="px-2 py-0.5 bg-purple-500 text-white text-[10px] font-bold rounded uppercase">Plus Only</span>}
+                                {!isUnlimited && <span className="px-2 py-0.5 bg-purple-500 text-white text-[10px] font-bold rounded uppercase">Unlimited Only</span>}
                             </div>
                             <div className="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
                                 <input type="checkbox" name="isAnonymousVoting" id="isAnonymous" checked={currentEvent.isAnonymousVoting} onChange={(e) => { if (isUnlimited) setCurrentEvent({ ...currentEvent, isAnonymousVoting: e.target.checked }); }} disabled={!isUnlimited} className="toggle-checkbox absolute block w-12 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer disabled:cursor-not-allowed z-10 opacity-0 inset-0" />
@@ -368,6 +306,71 @@ export default function EventSettings({ event, planSlug }: { event: EventData, p
 
             {/* COLUMNA 2: ENLACES Y ZONA PELIGRO (MANTENER IGUAL) */}
             <div className="space-y-8">
+
+                {/* NUEVO: CAJA DE ESTADO DE PUBLICACIÓN */}
+                <div className={`p-6 rounded-xl border ${isApproved ? 'bg-green-900/20 border-green-500/30' :
+                    isPending ? 'bg-yellow-900/20 border-yellow-500/30' :
+                        isDenied ? 'bg-red-900/20 border-red-500/30' :
+                            'bg-neutral-900 border-white/10'
+                    }`}>
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                Estado:
+                                <span className={`uppercase tracking-wider text-sm px-2 py-0.5 rounded ${isApproved ? 'text-green-400 bg-green-500/10' :
+                                    isPending ? 'text-yellow-400 bg-yellow-500/10' :
+                                        isDenied ? 'text-red-400 bg-red-500/10' :
+                                            'text-gray-400 bg-gray-700/30'
+                                    }`}>
+                                    {isPending ? 'En Revisión' :
+                                        isApproved ? 'Aprobado' :
+                                            isDenied ? 'Rechazado' : 'Borrador'}
+                                </span>
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-1">
+                                {isDraft && "El evento es privado. Solicita revisión para que aparezca en el buscador público."}
+                                {isPending && "Los moderadores están revisando tu evento. Te avisaremos pronto."}
+                                {isApproved && "¡Tu evento ha sido aprobado y puede ser publicado!"}
+                                {isDenied && "Tu solicitud fue denegada. Revisa el motivo abajo."}
+                            </p>
+                        </div>
+
+                        <div className="p-2 bg-black/20 rounded-full">
+                            {isPending ? <Clock className="text-yellow-500" /> :
+                                isApproved ? <CheckCircle className="text-green-500" /> :
+                                    isDenied ? <XCircle className="text-red-500" /> :
+                                        <Send className="text-gray-500" />}
+                        </div>
+                    </div>
+
+                    {/* MOTIVO DE RECHAZO */}
+                    {isDenied && currentEvent.reviewReason && (
+                        <div className="mb-4 p-3 bg-red-950/30 border border-red-500/20 rounded-lg">
+                            <p className="text-xs text-red-300 font-bold uppercase mb-1">Motivo del rechazo:</p>
+                            <p className="text-sm text-white">{currentEvent.reviewReason}</p>
+                        </div>
+                    )}
+
+                    {/* BOTÓN DE ACCIÓN */}
+                    {(isDraft || isDenied) && (
+                        <button
+                            onClick={handleOpenRequestModal}
+                            disabled={isRequesting}
+                            className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            {isRequesting ? (
+                                <Bouncy size="20" color="black" />
+                            ) : (
+                                <>
+                                    <Send size={16} />
+                                    {isDenied ? "Corregir y Solicitar de Nuevo" : "Solicitar Publicación"}
+                                </>
+                            )}
+                        </button>
+                    )}
+
+                </div>
+                
                 <div className="p-6 border border-blue-500/20 bg-blue-500/5 rounded-xl space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
