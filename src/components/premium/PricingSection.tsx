@@ -34,7 +34,7 @@ const PRICING_DATA = [
         title: "Plus",
         price: "8.99€",
         period: "/mes",
-        description: "Para organizadores de eventos serios.",
+        description: "Para disfrutar de eventos sin anuncios.",
         features: ["10 Eventos Activos", "15 Categorías máximo por evento", "50 Participantes máximo por evento", "Generación de imágenes con IA", "Soporte prioritario", "Estadísticas Avanzadas", "Sin publicidad"],
         priceId: PLANS.PLUS.priceId
     },
@@ -44,7 +44,7 @@ const PRICING_DATA = [
         price: "12.99€",
         period: "/mes",
         description: "Para organizadores de eventos serios.",
-        features: ["20 Eventos Activos", "30 Categorías máximo por evento", "100 Participantes máximo por evento", "Desactivación de voto anónimo", "Estadísticas Avanzadas", "Sin publicidad", "Todo lo de Plus"],
+        features: ["20 Eventos Activos", "30 Categorías máximo por evento", "100 Participantes máximo por evento", "Generación de imágenes con IA", "Soporte prioritario", "Estadísticas Avanzadas", "Sin publicidad", "Desactivación de voto anónimo"],
         priceId: PLANS.UNLIMITED.priceId
     },
 ];
