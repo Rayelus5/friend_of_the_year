@@ -12,6 +12,10 @@
 
 ---
 
+<img width="1194" height="744" alt="canvas" src="https://github.com/user-attachments/assets/be3269ce-fd39-4e25-94c8-9d7b5a512435" />
+
+---
+
 ## 📝 Project Description
 
 POLLNOW is a full-stack awards & voting platform built on top of **Next.js (App Router)**, designed for creating, managing, and analyzing structured events with multi-category voting.
