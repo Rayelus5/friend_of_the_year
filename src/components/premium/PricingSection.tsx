@@ -203,9 +203,7 @@ export default function PricingSection({ currentPlanSlug }: { currentPlanSlug: s
                                             {/* CTA: si es current muestra Manage, si tiene priceId muestra Checkout, si no es priceId (ej enterprise) link a contacto */}
                                             {isCurrent ? (
                                                 plan.priceId ? (
-                                                    <div className="animate-in zoom-in duration-300">
-                                                        <ManageButton />
-                                                    </div>
+                                                    <ManageButton />
                                                 ) : (
                                                     <div className="w-full py-3 rounded-xl font-bold border border-green-500/30 text-green-400 bg-green-500/5 cursor-default flex items-center justify-center gap-2">
                                                         <Check size={16} /> Plan Actual
