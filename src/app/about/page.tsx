@@ -100,7 +100,7 @@ export default function AboutPage() {
                                 Hola! soy Rayelus, el desarrollador detrás de este proyecto. Como buen apasionado por la informática que soy, quería crear algo que uniera a las personas de una manera divertida y moderna.
                             </p>
                             <p className="text-gray-400 text-lg leading-relaxed">
-                                POLLNOW está construido con las últimas tecnologías web (Next.js 14, TypeScript, Tailwind CSS) para asegurar una experiencia fluida, rápida y segura.
+                                POLLNOW está construido con las últimas tecnologías web (Next.js 16, React 19, TypeScript, Tailwind CSS) para asegurar una experiencia fluida, rápida y segura.
                             </p>
                             <p className="text-gray-400 text-lg leading-relaxed">
                                 Este proyecto nació para unir (o destruir) tu grupo de amigos, para pasar un buen rato en la comida familiar, o simplemente para crear encuestas/votaciones de todo tipo.
