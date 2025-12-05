@@ -43,9 +43,10 @@ const PRICING_DATA = [
         title: "Unlimited",
         price: "12.99€",
         period: "/mes",
-        description: "Para organizadores de eventos serios.",
+        description: "Para organizadores de eventos serios. Aumenta tus límites al máximo nivel, incluyendo desactivación de voto anónimo.",
         features: ["20 Eventos Activos", "30 Categorías máximo por evento", "100 Participantes máximo por evento", "Generación de imágenes con IA", "Soporte prioritario", "Estadísticas Avanzadas", "Sin publicidad", "Desactivación de voto anónimo"],
-        priceId: PLANS.UNLIMITED.priceId
+        priceId: PLANS.PLUS.priceId, // ajusta al id correcto si procede
+        enterpriseLike: true // <- NUEVO: marca para render enterprise-style dentro del map
     },
 ];
 
@@ -106,18 +107,141 @@ export default function PricingSection({ currentPlanSlug }: { currentPlanSlug: s
                     const isHovered = hoveredIndex === index;
                     const isBlur = hoveredIndex !== null && hoveredIndex !== index;
                     const isLastItem = index === PRICING_DATA.length - 1;
+                    const isEnterpriseLike = !!plan.enterpriseLike;
 
+                    // Si es enterprise-like, dale md:col-span-3 para que ocupe el ancho full del grid
+                    const colSpanClass = isEnterpriseLike ? "md:col-span-3" : "md:col-span-1";
+
+                    // RENDER "enterprise-style" INLINE dentro del map
+                    if (isEnterpriseLike) {
+                        return (
+                            <motion.div
+                                key={plan.key}
+                                variants={cardVariants}
+                                onMouseEnter={() => setHoveredIndex(index)}
+                                className={clsx(
+                                    "relative p-1 rounded-[2rem] transition-transform duration-500 ease-out",
+                                    colSpanClass
+                                )}
+                            >
+                                <div className="relative overflow-hidden rounded-[2rem] border border-blue-600/40 bg-gradient-to-r from-blue-900/60 via-black to-indigo-400/70 p-[1px] cursor-pointer hover:scale-102 transition-all duration-300">
+                                    <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 px-8 py-12 md:py-20 bg-black/80 rounded-[2rem]">
+                                        {/* Glow decorativo */}
+                                        <div className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-blue-600/20 blur-3xl" />
+                                        <div className="pointer-events-none absolute right-0 bottom-0 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
+
+                                        {/* Texto principal */}
+                                        <div className="relative text-left max-w-2xl">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/40 border border-blue-600/40 mb-4">
+                                                <Sparkles size={12} className="text-blue-300" />
+                                                <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-blue-200">
+                                                    Perfecto para profesionales
+                                                </span>
+                                            </div>
+
+                                            <h3 className="text-2xl md:text-3xl font-extrabold text-white mb-2">
+                                                Plan {plan.title}
+                                            </h3>
+
+                                            <p className="text-sm md:text-base text-gray-300 mb-4">
+                                                {plan.description}
+                                            </p>
+
+                                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-8 text-gray-300">
+                                                {plan.features.map((f, i) => (
+                                                    <li key={i} className="flex items-center gap-2">
+                                                        <div className="mt-0.5 p-1 rounded-full bg-blue-600/20 text-blue-400">
+                                                            <Check size={10} strokeWidth={3} />
+                                                        </div>
+                                                        {f}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        {/* Precio + CTA */}
+                                        <div className="relative flex flex-col items-center md:items-end gap-4 ">
+                                            {/* Price block (recommended: numeric fields) */}
+                                            <div className="text-center md:text-right">
+                                                <span className="block text-xs font-semibold text-gray-400 uppercase tracking-[0.2em] mb-1">
+                                                    Precio (Oferta de salida)
+                                                </span>
+
+                                                <div className="flex items-baseline items-center gap-3 justify-start md:justify-end mt-5 md:mt-0">
+                                                    {/* Original price (tached) */}
+                                                    <div className="flex flex-col justify-end p-2 rounded-xl bg-blue-950/40 border border-blue-400/30">
+                                                        <span
+                                                            className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs md:text-sm justify-center font-semibold bg-blue-600 text-white"
+                                                            aria-hidden="true"
+                                                        >
+                                                            -{Math.round((1 - 12.99 / 24.99) * 100)}%
+                                                        </span>
+
+                                                        <span
+                                                            className="text-md md:text-xl text-gray-400 line-through opacity-80"
+                                                            aria-hidden="true"
+                                                        >
+                                                            €{24.99.toFixed(2)}
+                                                        </span>
+
+                                                    </div>
+
+                                                    {/* Discounted price (prominent) */}
+                                                    <div className="text-5xl md:text-6xl font-extrabold text-blue-300">
+                                                        {plan.price}
+                                                        {plan.period && <span className="text-sm text-gray-400 font-medium ml-2">{plan.period}</span>}
+                                                    </div>
+                                                </div>
+
+                                                {/* Hidden accessibility text describing the offer for screen readers */}
+                                                <span className="sr-only">
+                                                    Original price 24.99€. Now {plan.price}€.
+                                                </span>
+                                            </div>
+
+
+                                            {/* CTA: si es current muestra Manage, si tiene priceId muestra Checkout, si no es priceId (ej enterprise) link a contacto */}
+                                            {isCurrent ? (
+                                                plan.priceId ? (
+                                                    <div className="animate-in zoom-in duration-300">
+                                                        <ManageButton />
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-full py-3 rounded-xl font-bold border border-green-500/30 text-green-400 bg-green-500/5 cursor-default flex items-center justify-center gap-2">
+                                                        <Check size={16} /> Plan Actual
+                                                    </div>
+                                                )
+                                            ) : plan.priceId ? (
+                                                <CheckoutButton priceId={plan.priceId} highlight={plan.highlight || false} />
+                                            ) : (
+                                                <Link
+                                                    href="/about#contact"
+                                                    className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-sm md:text-base bg-white text-black hover:bg-gray-100 transition-colors border border-white/10"
+                                                >
+                                                    Contactar
+                                                    <ArrowRight size={16} />
+                                                </Link>
+                                            )}
+
+                                            <span className="text-[11px] text-gray-500 max-w-xs text-center md:text-right">
+                                                {isCurrent ? "Gracias por confiar en nosotros." : "Elije el máximo nivel de creación de eventos en Pollnow."}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    }
+
+                    // RENDER NORMAL (los demás planes)
                     return (
                         <motion.div
                             key={plan.key}
                             variants={cardVariants}
                             onMouseEnter={() => setHoveredIndex(index)}
                             className={clsx(
-                                // CAMBIO 1: Padding responsive (p-5 en movil, p-8 en desktop)
                                 "cursor-pointer relative p-5 md:p-8 rounded-[2rem] flex flex-col transition-transform duration-500 ease-out border-2 max-h-[700px]",
-
-                                isLastItem ? "md:col-span-3" : "md:col-span-1",
-
+                                colSpanClass,
                                 plan.highlight
                                     ? "bg-neutral-900 border-indigo-600/50 shadow-[0_0_40px_-10px_rgba(59,130,246,0.15)]"
                                     : "bg-black border-white/20",
@@ -137,7 +261,7 @@ export default function PricingSection({ currentPlanSlug }: { currentPlanSlug: s
                                 <h3 className={clsx("text-xl font-bold mb-2", plan.highlight ? "text-white" : "text-gray-300")}>
                                     {plan.title}
                                 </h3>
-                                <div className="flex items-baseline justify-center gap-1 flex-wrap"> {/* flex-wrap por seguridad */}
+                                <div className="flex items-baseline justify-center gap-1 flex-wrap">
                                     <span className={clsx("text-4xl md:text-5xl font-black tracking-tight", plan.highlight ? "text-indigo-300" : "text-gray-200")}>
                                         {plan.price}
                                     </span>
@@ -149,15 +273,12 @@ export default function PricingSection({ currentPlanSlug }: { currentPlanSlug: s
                             {/* Lista de Features */}
                             <ul className={clsx(
                                 "space-y-4 mb-8 flex-1",
-                                // CAMBIO 2: w-full y max-w-[700px] en lugar de ancho fijo
-                                isLastItem
-                                    ? "grid grid-cols-1 lg:text-center text-left md:m-auto pb-10 max-w-[700px]"
-                                    : "text-left"
+                                isLastItem ? "grid grid-cols-1 lg:text-center text-left md:m-auto pb-10 max-w-[700px]" : "text-left"
                             )}>
                                 {plan.features.map((f, i) => (
                                     <li key={i} className="flex items-start gap-3 text-sm text-gray-300">
                                         <div className={clsx(
-                                            "mt-0.5 p-1 rounded-full flex-shrink-0", // flex-shrink-0 evita que el icono se aplaste
+                                            "mt-0.5 p-1 rounded-full flex-shrink-0",
                                             plan.highlight ? "bg-indigo-600/20 text-indigo-400" : "bg-white/10 text-gray-500"
                                         )}>
                                             <Check size={10} strokeWidth={3} />
@@ -192,7 +313,7 @@ export default function PricingSection({ currentPlanSlug }: { currentPlanSlug: s
                 })}
             </motion.div>
 
-            {/* TARJETA ENTERPRISE FULL-WIDTH */}
+            {/* TARJETA ENTERPRISE FULL-WIDTH (OPCIONAL - puedes mantenerla si quieres) */}
             <motion.div
                 variants={cardVariants}
                 initial="hidden"
@@ -269,7 +390,7 @@ export default function PricingSection({ currentPlanSlug }: { currentPlanSlug: s
                                     Precio
                                 </span>
                                 <div className="flex items-baseline gap-2 justify-start md:justify-end">
-                                    <span className="text-4xl md:text-5xl font-black text-indigo-200">
+                                    <span className="text-4xl md:text-6xl font-black text-indigo-200">
                                         HABLEMOS
                                     </span>
                                 </div>
@@ -290,8 +411,6 @@ export default function PricingSection({ currentPlanSlug }: { currentPlanSlug: s
                     </div>
                 </div>
             </motion.div>
-
-
 
             <motion.p
                 initial={{ opacity: 0 }}
