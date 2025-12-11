@@ -1,9 +1,11 @@
+// app/admin/users/page.tsx
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
-import { Search, Filter, Eye, ShieldAlert, MoreVertical, Users } from "lucide-react";
+import { Search, Filter, Users } from "lucide-react";
 import AdminPagination from "@/components/admin/AdminPagination";
+import AdminUsersTableClient from "@/components/admin/AdminUsersTableClient";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,6 @@ export default async function AdminUsersPage({
     const pageParam = params?.page || "1";
     const currentPage = Math.max(1, Number(pageParam) || 1);
 
-    // Construcción dinámica del filtro
     const whereClause: any = {};
 
     if (query) {
@@ -50,6 +51,21 @@ export default async function AdminUsersPage({
 
     const totalPages = Math.max(1, Math.ceil(totalUsers / PAGE_SIZE));
 
+    // Serializar para cliente (fechas a ISO, evitar objetos)
+    const usersForClient = users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        username: u.username,
+        email: u.email,
+        image: u.image,
+        role: u.role,
+        ipBan: u.ipBan ?? false,
+        subscriptionStatus: u.subscriptionStatus ?? "free",
+        stripePriceId: u.stripePriceId ?? null,
+        createdAt: u.createdAt.toISOString(),
+        _count: u._count,
+    }));
+
     return (
         <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
@@ -64,7 +80,6 @@ export default async function AdminUsersPage({
                 </div>
 
                 <div className="flex gap-2 w-full md:w-auto">
-                    {/* Buscador */}
                     <form className="relative flex-1 md:flex-none">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input
@@ -78,7 +93,6 @@ export default async function AdminUsersPage({
                         )}
                     </form>
 
-                    {/* Filtro de Rol */}
                     <div className="flex bg-neutral-900 border border-white/10 rounded-lg p-1">
                         <FilterLink role="ALL" current={roleFilter} label="Todos" />
                         <FilterLink role="ADMIN" current={roleFilter} label="Admins" />
@@ -87,111 +101,15 @@ export default async function AdminUsersPage({
                 </div>
             </div>
 
-            <div className="bg-neutral-900 border border-white/10 rounded-xl overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-white/5 text-gray-400 text-xs uppercase tracking-wider">
-                            <th className="p-4 font-medium">Usuario</th>
-                            <th className="p-4 font-medium">Estado</th>
-                            <th className="p-4 font-medium">Plan</th>
-                            <th className="p-4 font-medium">Actividad</th>
-                            <th className="p-4 font-medium">Registro</th>
-                            <th className="p-4 font-medium text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5 text-sm text-gray-300">
-                        {users.map((user) => (
-                            <tr
-                                key={user.id}
-                                className={`hover:bg-white/5 transition-colors group ${
-                                    user.ipBan ? "bg-red-900/10" : ""
-                                }`}
-                            >
-                                <td className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden text-xs font-bold text-gray-500">
-                                            {user.image ? (
-                                                // eslint-disable-next-line @next/next/no-img-element
-                                                <img
-                                                    src={user.image}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                user.name?.[0]
-                                            )}
-                                        </div>
-                                        <div>
-                                            <div className="font-medium text-white">{user.name}</div>
-                                            <div className="text-xs text-gray-500">{user.email}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex gap-2">
-                                        <span
-                                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                                                user.role === "ADMIN"
-                                                    ? "bg-purple-900/20 text-purple-400 border-purple-500/20"
-                                                    : user.role === "MODERATOR"
-                                                    ? "bg-blue-900/20 text-blue-400 border-blue-500/20"
-                                                    : "bg-gray-800 text-gray-400 border-gray-700"
-                                            }`}
-                                        >
-                                            {user.role}
-                                        </span>
-                                        {user.ipBan && (
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-900/20 text-red-400 border border-red-500/20 flex items-center gap-1">
-                                                <ShieldAlert size={10} /> BANNED
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <span
-                                        className={`capitalize text-xs ${
-                                            user.subscriptionStatus === "active"
-                                                ? "text-green-400"
-                                                : "text-gray-500"
-                                        }`}
-                                    >
-                                        {user.subscriptionStatus}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-xs text-gray-400 font-mono">
-                                    <div>{user._count.events} Eventos</div>
-                                    {user._count.reports > 0 && (
-                                        <div className="text-red-400">
-                                            {user._count.reports} Reportes
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="p-4 text-gray-500 text-xs">
-                                    {format(new Date(user.createdAt), "dd MMM yyyy", {
-                                        locale: es,
-                                    })}
-                                </td>
-                                <td className="p-4 text-right">
-                                    <Link
-                                        href={`/admin/users/${user.id}`}
-                                        className="inline-flex p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                                        title="Ver Detalles"
-                                    >
-                                        <Eye size={16} />
-                                    </Link>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            {/* Componente cliente que maneja selección y acciones masivas */}
+            <AdminUsersTableClient
+                users={usersForClient}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                query={query || undefined}
+                role={roleFilter !== "ALL" ? roleFilter : undefined}
+            />
 
-                {users.length === 0 && (
-                    <div className="p-12 text-center text-gray-500">
-                        No se encontraron usuarios.
-                    </div>
-                )}
-            </div>
-
-            {/* Paginador debajo, manteniendo el layout general */}
             <AdminPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -219,9 +137,7 @@ function FilterLink({
         <Link
             href={`?role=${role}`}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                isActive
-                    ? "bg-white/10 text-white"
-                    : "text-gray-500 hover:text-gray-300"
+                isActive ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
             }`}
         >
             {label}

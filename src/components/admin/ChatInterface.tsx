@@ -46,9 +46,9 @@ export default function ChatInterface({
     const isOwn = (msg: ChatMessageType) => msg.senderId === currentUserId;
 
     // Scroll al final cuando cambien los mensajes
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages.length]);
+    // useEffect(() => {
+    //     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // }, [messages.length]);
 
     // Función de sincronización reutilizable
     const fetchMessages = async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { clsx } from "clsx";
 import CreateEventButton from "@/components/dashboard/CreateEventButton";
@@ -63,6 +63,9 @@ type DashboardTabsProps = {
 
 type TabId = "events" | "profile" | "notifications" | "support";
 
+/* ========== CONFIG =========== */
+const PAGE_SIZE = 6;
+
 export default function DashboardTabs({
     user,
     plan,
@@ -88,12 +91,24 @@ export default function DashboardTabs({
 
     const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
+    // Pagination state per tab
+    const [eventsPage, setEventsPage] = useState(1);
+    const [notificationsPage, setNotificationsPage] = useState(1);
+    const [supportPage, setSupportPage] = useState(1);
+
     useEffect(() => {
         const tab = searchParams.get("tab");
         if (tab && tab !== activeTab) {
             setActiveTab(tab as TabId);
         }
     }, [searchParams]);
+
+    // When tab changes reset its page to 1 (so user sees first page of that tab)
+    useEffect(() => {
+        setEventsPage(1);
+        setNotificationsPage(1);
+        setSupportPage(1);
+    }, [activeTab]);
 
     return (
         <div>
@@ -134,6 +149,8 @@ export default function DashboardTabs({
                         user={user}
                         isCreating={isCreatingEvent}
                         onCreatingChange={setIsCreatingEvent}
+                        page={eventsPage}
+                        setPage={setEventsPage}
                     />
                 )}
 
@@ -142,11 +159,19 @@ export default function DashboardTabs({
                 )}
 
                 {activeTab === "notifications" && (
-                    <NotificationsTab notifications={notifications} />
+                    <NotificationsTab
+                        notifications={notifications}
+                        page={notificationsPage}
+                        setPage={setNotificationsPage}
+                    />
                 )}
 
                 {activeTab === "support" && (
-                    <SupportTab supportChats={supportChats} />
+                    <SupportTab
+                        supportChats={supportChats}
+                        page={supportPage}
+                        setPage={setSupportPage}
+                    />
                 )}
             </div>
         </div>
@@ -161,6 +186,8 @@ type EventsTabProps = {
     user: DashboardTabsProps["user"];
     isCreating: boolean;
     onCreatingChange: (v: boolean) => void;
+    page: number;
+    setPage: (n: number) => void;
 };
 
 function EventsTab({
@@ -169,7 +196,17 @@ function EventsTab({
     user,
     isCreating,
     onCreatingChange,
+    page,
+    setPage,
 }: EventsTabProps) {
+    const total = events.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    const paged = useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+        return events.slice(start, start + PAGE_SIZE);
+    }, [events, page]);
+
     return (
         <section>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -202,7 +239,7 @@ function EventsTab({
                     isCreating && "opacity-60 pointer-events-none"
                 )}
             >
-                {events.map((event) => (
+                {paged.map((event) => (
                     <DashboardEventCard key={event.id} event={event} />
                 ))}
 
@@ -215,6 +252,16 @@ function EventsTab({
                     </div>
                 )}
             </div>
+
+            {/* PAGINADOR */}
+            {total > PAGE_SIZE && (
+                <Pagination
+                    className="mt-8"
+                    page={page}
+                    setPage={setPage}
+                    totalPages={totalPages}
+                />
+            )}
         </section>
     );
 }
@@ -258,8 +305,12 @@ function ProfileTab({
 
 function NotificationsTab({
     notifications,
+    page,
+    setPage,
 }: {
     notifications: DashboardTabsProps["notifications"];
+    page: number;
+    setPage: (n: number) => void;
 }) {
     if (notifications.length === 0) {
         return (
@@ -268,6 +319,14 @@ function NotificationsTab({
             </div>
         );
     }
+
+    const total = notifications.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    const paged = useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+        return notifications.slice(start, start + PAGE_SIZE);
+    }, [notifications, page]);
 
     return (
         <div className="space-y-4">
@@ -292,7 +351,7 @@ function NotificationsTab({
             </div>
 
             <ul className="space-y-3">
-                {notifications.map((n) => (
+                {paged.map((n) => (
                     <li
                         key={n.id}
                         className={clsx(
@@ -336,6 +395,16 @@ function NotificationsTab({
                     </li>
                 ))}
             </ul>
+
+            {/* PAGINADOR */}
+            {total > PAGE_SIZE && (
+                <Pagination
+                    className="mt-6"
+                    page={page}
+                    setPage={setPage}
+                    totalPages={totalPages}
+                />
+            )}
         </div>
     );
 }
@@ -344,9 +413,42 @@ function NotificationsTab({
 
 function SupportTab({
     supportChats,
+    page,
+    setPage,
 }: {
     supportChats: DashboardTabsProps["supportChats"];
+    page: number;
+    setPage: (n: number) => void;
 }) {
+    if (supportChats.length === 0) {
+        return (
+            <section className="space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold">Chats de Soporte</h2>
+                        <p className="text-gray-400 text-sm">
+                            Contacta con nosotros si necesitas ayuda.
+                        </p>
+                    </div>
+                    <div className="flex justify-end">
+                        <CreateTicketButton />
+                    </div>
+                </div>
+                <div className="py-10 text-center text-sm text-gray-500 border border-dashed border-white/10 rounded-2xl">
+                    No tienes tickets abiertos. Crea uno nuevo si necesitas ayuda.
+                </div>
+            </section>
+        );
+    }
+
+    const total = supportChats.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    const paged = useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+        return supportChats.slice(start, start + PAGE_SIZE);
+    }, [supportChats, page]);
+
     return (
         <section className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -361,46 +463,94 @@ function SupportTab({
                 </div>
             </div>
 
-            {supportChats.length === 0 && (
-                <div className="py-10 text-center text-sm text-gray-500 border border-dashed border-white/10 rounded-2xl">
-                    No tienes tickets abiertos. Crea uno nuevo si necesitas ayuda.
-                </div>
-            )}
+            <div className="space-y-2">
+                {paged.map((chat) => (
+                    <a
+                        key={chat.id}
+                        href={`/dashboard/support/${chat.id}`}
+                        className="block p-4 rounded-xl border border-white/10 bg-neutral-900/60 hover:border-blue-500/40 hover:bg-neutral-900 transition-colors text-sm cursor-pointer"
+                    >
+                        <div className="flex justify-between items-center">
+                            <div className="font-semibold">Ticket #{chat.id.slice(0, 8)}</div>
+                            <span
+                                className={clsx(
+                                    "text-[11px] px-2 py-0.5 rounded-full border",
+                                    chat.isClosed
+                                        ? "border-red-500/40 text-red-300 bg-red-500/10"
+                                        : "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+                                )}
+                            >
+                                {chat.isClosed ? "Cerrado" : "Abierto"}
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-gray-400">
+                            Último mensaje{" "}
+                            {formatDistanceToNow(chat.lastMessageAt, {
+                                addSuffix: true,
+                                locale: es,
+                            })}
+                        </p>
+                    </a>
+                ))}
+            </div>
 
-            {supportChats.length > 0 && (
-                <div className="space-y-2">
-                    {supportChats.map((chat) => (
-                        <a
-                            key={chat.id}
-                            href={`/dashboard/support/${chat.id}`}
-                            className="block p-4 rounded-xl border border-white/10 bg-neutral-900/60 hover:border-blue-500/40 hover:bg-neutral-900 transition-colors text-sm cursor-pointer"
-                        >
-                            <div className="flex justify-between items-center">
-                                <div className="font-semibold">
-                                    Ticket #{chat.id.slice(0, 8)}
-                                </div>
-                                <span
-                                    className={clsx(
-                                        "text-[11px] px-2 py-0.5 rounded-full border",
-                                        chat.isClosed
-                                            ? "border-red-500/40 text-red-300 bg-red-500/10"
-                                            : "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
-                                    )}
-                                >
-                                    {chat.isClosed ? "Cerrado" : "Abierto"}
-                                </span>
-                            </div>
-                            <p className="mt-1 text-[11px] text-gray-400">
-                                Último mensaje{" "}
-                                {formatDistanceToNow(chat.lastMessageAt, {
-                                    addSuffix: true,
-                                    locale: es,
-                                })}
-                            </p>
-                        </a>
-                    ))}
-                </div>
+            {/* PAGINADOR */}
+            {total > PAGE_SIZE && (
+                <Pagination
+                    className="mt-6"
+                    page={page}
+                    setPage={setPage}
+                    totalPages={totalPages}
+                />
             )}
         </section>
+    );
+}
+
+/* =======================
+   Reusable Pagination UI
+   ======================= */
+function Pagination({
+    page,
+    setPage,
+    totalPages,
+    className,
+}: {
+    page: number;
+    setPage: (n: number) => void;
+    totalPages: number;
+    className?: string;
+}) {
+    const prev = () => setPage(Math.max(1, page - 1));
+    const next = () => setPage(Math.min(totalPages, page + 1));
+
+    return (
+        <div className={clsx("flex items-center justify-center gap-3", className)}>
+            <button
+                onClick={prev}
+                disabled={page <= 1}
+                className={clsx(
+                    "px-3 py-1 rounded-md text-sm border transition-colors",
+                    page <= 1 ? "text-gray-500 border-white/5 cursor-not-allowed" : "text-white border-white/20 hover:bg-white/5 cursor-pointer"
+                )}
+            >
+                Anterior
+            </button>
+
+            <div className="text-sm text-gray-300">
+                Page {page} / {totalPages}
+            </div>
+
+            <button
+                onClick={next}
+                disabled={page >= totalPages}
+                className={clsx(
+                    "px-3 py-1 rounded-md text-sm border transition-colors",
+                    page >= totalPages ? "text-gray-500 border-white/5 cursor-not-allowed" : "text-white border-white/20 hover:bg-white/5 cursor-pointer"
+                )}
+            >
+                Siguiente
+            </button>
+        </div>
     );
 }

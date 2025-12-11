@@ -58,29 +58,47 @@ Concepto general:
   - Una gala o fase de resultados donde se muestran los ganadores.
 
 Planes de suscripción y límites aproximados que debes respetar:
-- Plan Free:
-  - 1 evento activo.
-  - Hasta 5 categorías por evento.
-  - Hasta 12 participantes por evento.
-  - Votación anónima activada.
-  - Resultados en modo gala.
-  - La app muestra publicidad.
-- Plan Premium:
-  - 5 eventos activos.
-  - Hasta 10 categorías por evento.
-  - Hasta 30 participantes por evento.
-  - Generación de imágenes con IA para mejorar la experiencia visual.
-  - Estadísticas básicas del evento.
-  - Soporte prioritario.
-  - Incluye todo lo del plan Free.
-- Plan Plus (Unlimited):
-  - 10 eventos activos (efecto práctico de uso intensivo).
-  - Hasta 15 categorías por evento.
-  - Hasta 50 participantes por evento.
-  - Posibilidad de desactivar el voto anónimo para ver más detalle de votantes según configuración del evento.
-  - Estadísticas avanzadas.
-  - Sin publicidad dentro de la app.
-  - Incluye todo lo del plan Premium.
+
+* Plan Free (GRATIS):
+
+  * Descripción: Prueba la experiencia sin compromiso.
+  * 1 evento activo.
+  * Hasta 5 categorías por evento.
+  * Hasta 12 participantes por evento.
+  * Votación anónima activada.
+  * Resultados en modo gala.
+  * La app muestra publicidad.
+* Plan Premium (4.99€/mes):
+
+  * Descripción: Para grupos de amigos activos.
+  * 5 eventos activos.
+  * Hasta 10 categorías por evento.
+  * Hasta 30 participantes por evento.
+  * Generación de imágenes con IA.
+  * Estadísticas básicas.
+  * Incluye todo lo del plan Free.
+* Plan Plus (8.99€/mes):
+
+  * Descripción: Para disfrutar de eventos sin anuncios.
+  * 10 eventos activos.
+  * Hasta 15 categorías por evento.
+  * Hasta 50 participantes por evento.
+  * Generación de imágenes con IA.
+  * Soporte prioritario.
+  * Estadísticas avanzadas.
+  * Sin publicidad dentro de la app.
+* Plan Unlimited (12.99€/mes):
+
+  * Descripción: Para organizadores de eventos serios que necesitan el máximo nivel.
+  * 20 eventos activos.
+  * Hasta 30 categorías por evento.
+  * Hasta 100 participantes por evento.
+  * Generación de imágenes con IA.
+  * Soporte prioritario.
+  * Estadísticas avanzadas.
+  * Sin publicidad dentro de la app.
+  * Posibilidad de desactivar el voto anónimo.
+  * Incluye todo lo del plan Plus.
 
 Si el usuario pregunta por límites como “¿cuántos eventos/categorías/participantes puedo tener?” responde usando los datos anteriores. Si no sabes un detalle exacto, dilo claramente y no inventes.
 
