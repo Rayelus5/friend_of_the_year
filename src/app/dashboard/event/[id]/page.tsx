@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { PLANS } from "@/lib/plans";
 import { getPlanFromUser } from "@/lib/user-plan";
 import { getEventStats, getModeStats } from "@/app/lib/stats-actions";
+import { listVoteSnapshots } from "@/app/lib/snapshot-actions";
+import VoteSnapshotsSection from "@/components/dashboard/VoteSnapshotsSection";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Lock } from "lucide-react";
@@ -134,6 +136,7 @@ export default async function EventDashboardPage({ params }: Props) {
     const modeStats = !isGala
         ? await getModeStats(event.id, event.mode as "TIERLIST" | "PREGUNTAS" | "DIBUJO", { includeVoters: canSeeVoters })
         : null;
+    const snapshots = isGala && permissions.canViewStats ? await listVoteSnapshots(event.id) : [];
 
     return (
         <main className="min-h-screen bg-black text-white">
@@ -274,12 +277,21 @@ export default async function EventDashboardPage({ params }: Props) {
                     }
                     stats={
                         isGala ? (
-                            <EventStatistics
-                                stats={stats}
-                                planSlug={plan.slug}
-                                isAdmin={isAdmin}
-                                canViewStats={permissions.canViewStats}
-                            />
+                            <div className="space-y-8">
+                                <EventStatistics
+                                    stats={stats}
+                                    planSlug={plan.slug}
+                                    isAdmin={isAdmin}
+                                    canViewStats={permissions.canViewStats}
+                                />
+                                {permissions.canViewStats && (
+                                    <VoteSnapshotsSection
+                                        eventId={event.id}
+                                        initialSnapshots={snapshots}
+                                        canManage={isOwner || isAdmin}
+                                    />
+                                )}
+                            </div>
                         ) : (
                             <ModeStatistics
                                 stats={modeStats}

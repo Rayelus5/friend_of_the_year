@@ -62,6 +62,17 @@ export default async function PollPage({ params }: Props) {
         select: { id: true }
     });
 
+    // 3.bis Contador de categorías: total publicadas y cuántas le quedan por votar.
+    const categoriesTotal = await prisma.poll.count({
+        where: { eventId: poll.event.id, isPublished: true },
+    });
+    const categoriesVoted = voterId
+        ? await prisma.vote.count({
+            where: { voterHash: voterId, poll: { eventId: poll.event.id, isPublished: true } },
+        })
+        : 0;
+    const categoriesRemaining = Math.max(0, categoriesTotal - categoriesVoted);
+
     const formattedPoll = {
         id: poll.id,
         title: poll.title,
@@ -90,6 +101,8 @@ export default async function PollPage({ params }: Props) {
                 eventSlug={poll.event.slug}
                 lobbyHref={lobbyHref}
                 showAds={showAds}
+                categoriesTotal={categoriesTotal}
+                categoriesRemaining={categoriesRemaining}
             />
         </main>
     );

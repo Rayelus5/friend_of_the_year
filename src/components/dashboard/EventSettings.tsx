@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateEvent, deleteEvent, rotateEventKey, requestEventPublication } from "@/app/lib/dashboard-actions";
+import { updateEvent, deleteEvent, rotateEventKey, requestEventPublication, revertEventToDraft } from "@/app/lib/dashboard-actions";
 import TagsInput from "@/components/ui/TagsInput";
 import { useToast } from "@/components/ui/ToastProvider";
 import {
@@ -104,10 +104,14 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
     const [showConfirm, setShowConfirm] = useState(false);
     const [copied, setCopied] = useState(false);
     const [showRequestModal, setShowRequestModal] = useState(false);
+    const [showRevertModal, setShowRevertModal] = useState(false);
+    const [isReverting, setIsReverting] = useState(false);
 
     const router = useRouter();
     const toast = useToast();
     const isUnlimited = planSlug === 'unlimited';
+    // El control de privacidad de votos está disponible para los tiers más altos.
+    const canUseAnonymous = isUnlimited || planSlug === 'enterprise';
     const isDibujo = event.mode === "DIBUJO";
     const isPreguntas = event.mode === "PREGUNTAS";
 
@@ -116,8 +120,13 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
     const isDraft = currentEvent.status === "DRAFT";
     const isDenied = currentEvent.status === "DENIED";
 
+    // Un evento publicado (APROBADO) o en revisión (PENDING) queda bloqueado:
+    // hay que pasarlo a borrador con "Quiero hacer cambios" para poder editarlo.
+    const isLocked = isApproved || isPending;
+    const editable = canEdit && !isLocked;
+
     // Solo se puede tocar la visibilidad cuando está aprobado
-    const canEditVisibility = isApproved;
+    const canEditVisibility = isApproved && editable;
 
     const defaultDate = formatLocalDatetime(currentEvent.galaDate);
 
@@ -147,7 +156,7 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
 
 
     const handleFormSubmit = async (formData: FormData) => {
-        if (!isUnlimited) {
+        if (!canUseAnonymous) {
             if (currentEvent.isAnonymousVoting) {
                 formData.set('isAnonymousVoting', 'on');
             } else {
@@ -247,6 +256,35 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
     };
 
 
+    const confirmRevertToDraft = async () => {
+        setIsReverting(true);
+        try {
+            const res = await revertEventToDraft(event.id);
+
+            if (!res || !("success" in res) || !res.success || !res.event) {
+                console.error("Error al volver a borrador:", res?.error);
+                toast.error(res?.error ?? "No se pudo poner el evento en borrador.");
+                return;
+            }
+
+            setCurrentEvent(prev => ({
+                ...prev,
+                status: res.event.status,
+                isPublic: res.event.isPublic,
+                reviewReason: res.event.reviewReason ?? null,
+            }));
+
+            setShowRevertModal(false);
+            toast.success("Evento en borrador. Ya puedes hacer cambios.");
+            router.refresh();
+        } catch (e) {
+            console.error("Error al volver a borrador", e);
+            toast.error("No se pudo poner el evento en borrador.");
+        } finally {
+            setIsReverting(false);
+        }
+    };
+
     const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/e/${event.slug}${!currentEvent.isPublic ? `?key=${event.accessKey}` : ''}`;
 
 
@@ -262,7 +300,37 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
                     </div>
                 )}
 
-                <form action={handleFormSubmit} className={`space-y-8 tour-event-settings-card ${!canEdit ? "opacity-60 pointer-events-none" : ""}`}>
+                {/* BLOQUEO POR PUBLICACIÓN / REVISIÓN — "Quiero hacer cambios" */}
+                {canEdit && isLocked && (
+                    <div className="p-5 rounded-xl border-2 border-blue-500/30 bg-blue-500/5">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 shrink-0">
+                                <Lock size={18} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-bold text-white">
+                                    {isApproved ? "Este evento está publicado" : "Este evento está en revisión"}
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                                    Mientras esté {isApproved ? "público" : "en revisión"} no puedes editarlo. Pulsa
+                                    <strong className="text-gray-200"> Quiero hacer cambios</strong> para volver a ponerlo en
+                                    privado y borrador; podrás editarlo y luego solicitar la publicación de nuevo.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowRevertModal(true)}
+                                    disabled={isReverting}
+                                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-bold rounded-lg hover:bg-gray-200 transition-colors cursor-pointer disabled:opacity-60"
+                                >
+                                    <RefreshCw size={15} />
+                                    Quiero hacer cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <form action={handleFormSubmit} className={`space-y-8 tour-event-settings-card ${!editable ? "opacity-60 pointer-events-none" : ""}`}>
 
                     {/* SECCIÓN: INFORMACIÓN BÁSICA */}
                     <SectionCard
@@ -273,11 +341,11 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-1">Nombre del Evento</label>
-                                <input name="title" maxLength={40} defaultValue={currentEvent.title} className="w-full bg-black border-2 border-white/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors" required disabled={!canEdit} />
+                                <input name="title" maxLength={40} defaultValue={currentEvent.title} className="w-full bg-black border-2 border-white/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors" required disabled={!editable} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-1">Descripción</label>
-                                <textarea name="description" maxLength={100} defaultValue={currentEvent.description || ""} rows={3} className="w-full bg-black border-2 border-white/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors resize-none" disabled={!canEdit} />
+                                <textarea name="description" maxLength={100} defaultValue={currentEvent.description || ""} rows={3} className="w-full bg-black border-2 border-white/20 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors resize-none" disabled={!editable} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-1">Etiquetas</label>
@@ -306,7 +374,7 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
                                     <label className="block text-sm font-medium text-gray-300 mb-1">
                                         {isPreguntas ? "Fecha de cierre" : "Fecha de la Gala"}
                                     </label>
-                                    <input type="datetime-local" name="galaDate" defaultValue={defaultDate} className="w-full bg-black border-2 border-white/20 rounded-lg p-3 text-white dark-calendar focus:border-blue-500 outline-none" />
+                                    <input type="datetime-local" name="galaDate" defaultValue={defaultDate} disabled={!editable} className="w-full bg-black border-2 border-white/20 rounded-lg p-3 text-white dark-calendar focus:border-blue-500 outline-none disabled:opacity-60" />
                                 </div>
                                 {/* VISIBILIDAD (solo editable si el evento está APROBADO) */}
                                 <div className={!canEditVisibility ? "opacity-60" : ""}>
@@ -366,30 +434,32 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
 
                     {/* SECCIÓN: PRIVACIDAD DE VOTOS */}
                     <SectionCard
-                        icon={isUnlimited ? <ShieldCheck size={18} /> : <EyeOff size={18} />}
+                        icon={canUseAnonymous ? <ShieldCheck size={18} /> : <EyeOff size={18} />}
                         title="Privacidad de votos"
                         description="Controla si puedes ver la identidad de los votantes registrados."
-                        accent={isUnlimited ? "text-purple-400" : "text-gray-400"}
+                        accent={canUseAnonymous ? "text-purple-400" : "text-gray-400"}
                     >
-                        <div className={`p-4 rounded-lg border-2 transition-colors ${isUnlimited ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/10 bg-white/5 opacity-80'}`}>
+                        <div className={`p-4 rounded-lg border-2 transition-colors ${canUseAnonymous ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/10 bg-white/5 opacity-80'}`}>
                             <div className="flex justify-between items-center mb-2">
                                 <div className="flex items-center gap-2">
-                                    <label htmlFor="isAnonymous" className={`font-bold text-sm ${isUnlimited ? 'cursor-pointer text-white' : 'text-gray-400'}`}>Votación Anónima</label>
-                                    {!isUnlimited && <span className="px-2 py-0.5 bg-purple-500 text-white text-[10px] font-bold rounded uppercase">Unlimited Only</span>}
+                                    <label htmlFor="isAnonymous" className={`font-bold text-sm ${canUseAnonymous ? 'cursor-pointer text-white' : 'text-gray-400'}`}>Votación Anónima</label>
+                                    {!canUseAnonymous && <span className="px-2 py-0.5 bg-purple-500 text-white text-[10px] font-bold rounded uppercase">Unlimited Only</span>}
                                 </div>
                                 <div className="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
-                                    <input type="checkbox" name="isAnonymousVoting" id="isAnonymous" checked={currentEvent.isAnonymousVoting} onChange={(e) => { if (isUnlimited) setCurrentEvent({ ...currentEvent, isAnonymousVoting: e.target.checked }); }} disabled={!isUnlimited} className="toggle-checkbox absolute block w-12 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer disabled:cursor-not-allowed z-10 opacity-0 inset-0" />
-                                    <div className={`block overflow-hidden h-6 rounded-full transition-colors duration-300 ${currentEvent.isAnonymousVoting ? (isUnlimited ? 'bg-purple-600' : 'bg-gray-600') : 'bg-gray-700'}`}></div>
+                                    <input type="checkbox" name="isAnonymousVoting" id="isAnonymous" checked={currentEvent.isAnonymousVoting} onChange={(e) => { if (canUseAnonymous) setCurrentEvent({ ...currentEvent, isAnonymousVoting: e.target.checked }); }} disabled={!canUseAnonymous} className="toggle-checkbox absolute block w-12 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer disabled:cursor-not-allowed z-10 opacity-0 inset-0" />
+                                    <div className={`block overflow-hidden h-6 rounded-full transition-colors duration-300 ${currentEvent.isAnonymousVoting ? (canUseAnonymous ? 'bg-purple-600' : 'bg-gray-600') : 'bg-gray-700'}`}></div>
                                     <div className={`absolute left-0 top-0 bottom-0 w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-300 pointer-events-none ${currentEvent.isAnonymousVoting ? 'translate-x-6' : 'translate-x-0'}`}></div>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500 leading-relaxed">{isUnlimited ? "Si desactivas esto, podrás ver la identidad de los votantes registrados en las estadísticas avanzadas. Los votantes no logueados seguirán siendo anónimos." : "Por defecto, los votos son 100% anónimos. Actualiza a Unlimited para rastrear votantes registrados."}</p>
+                            <p className="text-xs text-gray-500 leading-relaxed">{canUseAnonymous ? "Si desactivas esto, podrás ver la identidad de los votantes registrados en las estadísticas avanzadas. Los votantes no logueados seguirán siendo anónimos." : "Por defecto, los votos son 100% anónimos. Actualiza a Unlimited para rastrear votantes registrados."}</p>
                         </div>
                     </SectionCard>
 
-                    <div className="flex justify-end">
-                        <SubmitButton />
-                    </div>
+                    {editable && (
+                        <div className="flex justify-end">
+                            <SubmitButton />
+                        </div>
+                    )}
                 </form>
             </div>
 
@@ -429,6 +499,42 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
                 </div>
             )}
 
+
+            {showRevertModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-neutral-900 border-2 border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl border-t-4 border-t-blue-500">
+                        <h2 className="text-xl font-bold text-white mb-2">Volver a borrador</h2>
+                        <p className="text-gray-400 text-sm mb-6">
+                            <strong>{event.title}</strong> volverá a estar <strong>privado</strong> y en estado{" "}
+                            <strong>BORRADOR</strong>. Dejará de aparecer públicamente hasta que vuelvas a solicitar
+                            su publicación. ¿Quieres continuar?
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowRevertModal(false)}
+                                disabled={isReverting}
+                                className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded text-gray-300 font-bold cursor-pointer disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmRevertToDraft}
+                                disabled={isReverting}
+                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {isReverting ? (
+                                    <Bouncy size={20} color="white" />
+                                ) : (
+                                    <>
+                                        <RefreshCw size={16} />
+                                        Poner en borrador
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* COLUMNA 2: ESTADO, ENLACES Y ZONA DE PELIGRO */}
             <div className="space-y-8">

@@ -237,6 +237,14 @@ export async function updateEvent(eventId: string, formData: FormData) {
     return;
   }
 
+  // 2.bis) Bloqueo de edición: un evento publicado (APPROVED) o en revisión
+  // (PENDING) no puede editarlo su dueño/colaborador. Debe pasarlo a borrador
+  // con `revertEventToDraft`. Los admins/moderadores sí pueden editar siempre.
+  if (!isAdmin && (event.status === "APPROVED" || event.status === "PENDING")) {
+    console.warn("Intento de editar evento bloqueado", { eventId, status: event.status });
+    return { error: "El evento está publicado o en revisión. Ponlo en borrador para poder editarlo." };
+  }
+
   // 2) Leer datos del formulario
   const title = formData.get("title") as string;
   const description = formData.get("description") as string;
@@ -397,6 +405,61 @@ export async function requestEventPublication(eventId: string) {
   if (isAdmin) {
     revalidatePath("/admin/events");
   }
+
+  return { success: true, event: updated };
+}
+
+// --- VOLVER A BORRADOR PARA EDITAR (NUEVO) ---
+// Un evento publicado o en revisión no es editable. Esta acción lo devuelve a
+// BORRADOR y lo pone en privado para que el usuario pueda hacer cambios y luego
+// volver a solicitar la publicación.
+export async function revertEventToDraft(eventId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "No autorizado" };
+
+  const isAdmin =
+    session.user.role === "ADMIN" || session.user.role === "MODERATOR";
+
+  const { allowed } = await getCollaboratorPermission(eventId, session.user.id, "canEditSettings");
+  if (!isAdmin && !allowed) {
+    console.warn("Intento de revertir evento sin permisos", { eventId, userId: session.user.id });
+    return { error: "Sin permisos para editar este evento." };
+  }
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { id: true, status: true },
+  });
+
+  if (!event) return { error: "Evento no encontrado" };
+
+  if (event.status !== "APPROVED" && event.status !== "PENDING") {
+    return { error: "El evento ya es editable." };
+  }
+
+  const updated = await prisma.event.update({
+    where: { id: eventId },
+    data: {
+      status: "DRAFT",
+      isPublic: false,
+      reviewReason: null,
+    },
+    select: {
+      id: true,
+      status: true,
+      isPublic: true,
+      reviewReason: true,
+    },
+  });
+
+  revalidatePath(`/dashboard/event/${eventId}`);
+  revalidatePath("/dashboard/requests");
+  revalidateTag("events-public", {});
+  if (isAdmin) {
+    revalidatePath("/admin/events");
+  }
+
+  await triggerDataChanged(eventId, session.user.id, "settings");
 
   return { success: true, event: updated };
 }

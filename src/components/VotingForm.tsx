@@ -7,6 +7,8 @@ import { clsx } from "clsx";
 import { motion, Variants } from "framer-motion";
 import { Bouncy } from "ldrs/react";
 import "ldrs/react/Bouncy.css";
+import { ListChecks } from "lucide-react";
+import ImageWithSkeleton from "@/components/ui/ImageWithSkeleton";
 
 // Tipos
 type PollData = {
@@ -70,6 +72,8 @@ export default function VotingForm({
     eventSlug,
     lobbyHref,
     showAds = true, // <- de momento sólo lo recibimos; lo puedes usar luego para banners laterales
+    categoriesTotal = 0,
+    categoriesRemaining = 0,
 }: {
     poll: PollData;
     nextPollId: string | null;
@@ -78,6 +82,8 @@ export default function VotingForm({
     eventSlug: string;
     lobbyHref?: string;
     showAds?: boolean;
+    categoriesTotal?: number;
+    categoriesRemaining?: number;
 }) {
     const router = useRouter();
 
@@ -221,7 +227,7 @@ export default function VotingForm({
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
-                className="flex justify-start mb-8"
+                className="flex justify-between items-center mb-8 gap-3"
             >
                 <Link
                     href={lobbyHref ?? `/e/${eventSlug}`}
@@ -237,6 +243,18 @@ export default function VotingForm({
                     </svg>
                     Volver al Lobby
                 </Link>
+
+                {/* Contador de categorías por votar */}
+                {categoriesTotal > 1 && (
+                    <span
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-300 bg-white/5 border-2 border-white/10 rounded-full px-4 py-2 whitespace-nowrap"
+                        title="Categorías que te quedan por votar"
+                    >
+                        <ListChecks className="w-4 h-4 text-blue-400" />
+                        <span className="text-white">{categoriesRemaining}</span>
+                        <span className="text-gray-500">/ {categoriesTotal} por votar</span>
+                    </span>
+                )}
             </motion.nav>
 
             {/* Header Animado */}
@@ -325,7 +343,7 @@ export default function VotingForm({
                             {/* Imagen */}
                             <div className="absolute inset-0 bg-gray-900">
                                 {opt.imageUrl ? (
-                                    <img
+                                    <ImageWithSkeleton
                                         src={opt.imageUrl}
                                         alt={opt.name}
                                         className={clsx(

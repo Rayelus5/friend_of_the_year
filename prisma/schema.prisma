@@ -251,12 +251,32 @@ model Event {
   // Ingresos
   revenuePayments RevenuePayment[] @relation("EventPayments")
 
+  // Snapshots de votaciones (ediciones guardadas antes de reiniciar)
+  voteSnapshots VoteSnapshot[]
+
   @@index([userId])
   @@index([slug])
   @@index([status])
   @@index([createdAt])
   @@index([status, createdAt])
   @@index([userId, mode]) // Conteo de eventos DIBUJO por usuario (límite de plan)
+}
+
+// Foto fija de los resultados de un evento en un momento dado. Permite guardar una
+// "edición" (ej: "Edición 2026") antes de reiniciar las votaciones para repetir el
+// evento. Guarda los resultados YA AGREGADOS (no los votos individuales).
+model VoteSnapshot {
+  id         String   @id @default(uuid())
+  eventId    String
+  title      String   @db.VarChar(120) // Ej: "Edición 2026"
+  data       Json // Resultados agregados (ver SnapshotData en snapshot-actions.ts)
+  totalVotes Int      @default(0)
+  galaDate   DateTime // Fecha de la gala en el momento del snapshot
+  createdAt  DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
 }
 
 model Participant {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import ImageWithSkeleton from "@/components/ui/ImageWithSkeleton";
 import {
     DndContext,
     closestCenter,
@@ -82,7 +83,7 @@ function CardInner({ p }: { p: Participant }) {
     return (
         <>
             {p.imageUrl ? (
-                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover pointer-events-none" />
+                <ImageWithSkeleton src={p.imageUrl} alt={p.name} className="w-full h-full object-cover pointer-events-none" />
             ) : (
                 <div className="w-full h-full flex items-center justify-center text-center text-[11px] font-bold text-gray-200 px-1 pointer-events-none">{p.name}</div>
             )}

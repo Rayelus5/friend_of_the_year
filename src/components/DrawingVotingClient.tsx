@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, ThumbsUp, ThumbsDown, Star, Send, Trophy, Clock, Loader2, PartyPopper, RefreshCw, Sparkles } from "lucide-react";
 import DrawingCanvas, { type DrawingCanvasHandle } from "@/components/DrawingCanvas";
 import WinnerConfetti from "@/components/WinnerConfetti";
+import ImageWithSkeleton from "@/components/ui/ImageWithSkeleton";
 
 type Phase = "DRAWING" | "VOTING" | "RESULTS";
 
@@ -204,7 +205,9 @@ function VotingPhase({ eventId, superlikeUsed }: { eventId: string; superlikeUse
                             const r = reacted[item.id];
                             return (
                                 <div key={item.id} className={`rounded-2xl overflow-hidden border-2 bg-neutral-900 ${r ? "border-green-500/30 opacity-70" : "border-white/10"}`}>
-                                    <img src={item.imageUrl} alt="Dibujo" className="w-full aspect-[3/2] object-cover bg-white" />
+                                    <div className="relative w-full aspect-[3/2] bg-white">
+                                        <ImageWithSkeleton src={item.imageUrl} alt="Dibujo" className="w-full h-full object-cover" skeletonClassName="bg-neutral-300" />
+                                    </div>
                                     <div className="flex items-center justify-center gap-2 p-2">
                                         <button onClick={() => react(item.id, "LIKE")} disabled={!!r} className={`flex-1 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer disabled:cursor-default ${r === "LIKE" ? "bg-green-500/20 text-green-400" : "bg-white/5 text-gray-300 hover:bg-green-500/10 hover:text-green-400 disabled:opacity-40"}`} title="Like (+100)">
                                             <ThumbsUp size={16} />
@@ -392,7 +395,7 @@ function ResultsPhase({ eventId }: { eventId: string }) {
                         >
                             <span className={`mb-1 ${isFirst ? "text-4xl" : "text-2xl"}`}>{MEDAL[rank]}</span>
                             <div className={`relative w-full rounded-2xl overflow-hidden ring-4 shadow-2xl ${RING[rank]}`}>
-                                <img src={r.imageUrl} alt={`#${rank + 1}`} className="w-full aspect-[3/2] object-cover bg-white" />
+                                <ImageWithSkeleton src={r.imageUrl} alt={`#${rank + 1}`} className="w-full aspect-[3/2] object-cover bg-white" skeletonClassName="bg-neutral-300" />
                                 {isFirst && <div className="absolute inset-0 ring-1 ring-inset ring-white/30 pointer-events-none" />}
                             </div>
                             <div className={`mt-2 font-black ${isFirst ? "text-amber-400 text-lg" : "text-gray-200"}`}>{r.score} pts</div>
@@ -411,7 +414,7 @@ function ResultsPhase({ eventId }: { eventId: string }) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {rest.map((r, i) => (
                         <div key={r.id} className="rounded-xl overflow-hidden border-2 border-white/10 bg-neutral-900 relative">
-                            <img src={r.imageUrl} alt={`#${i + 4}`} className="w-full aspect-[3/2] object-cover bg-white" />
+                            <ImageWithSkeleton src={r.imageUrl} alt={`#${i + 4}`} className="w-full aspect-[3/2] object-cover bg-white" skeletonClassName="bg-neutral-300" />
                             <div className="absolute inset-x-0 bottom-0 bg-black/70 text-[11px] text-center py-0.5 flex items-center justify-center gap-2">
                                 <span className="text-gray-400">#{i + 4}</span>
                                 <span className="font-bold text-white">{r.score} pts</span>

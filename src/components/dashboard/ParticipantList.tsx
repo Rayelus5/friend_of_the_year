@@ -5,6 +5,7 @@ import { updateEventParticipant, createEventParticipant, reorderParticipants, de
 import { useToast } from "@/components/ui/ToastProvider";
 import { bulkCreateParticipants } from "@/app/lib/csv-actions";
 import CsvManagerModal, { type CsvManagerConfig, type ParsedRow } from "@/components/dashboard/CsvManagerModal";
+import ImageWithSkeleton from "@/components/ui/ImageWithSkeleton";
 import {
     DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
     DragOverlay, type DragEndEvent, type DragStartEvent,
@@ -15,7 +16,8 @@ import {
     Pencil, Trash2, Save, X, Plus, Search, Upload, Wand2,
     Lock, Star, Crown, ChevronLeft, ChevronRight, Sparkles,
     RefreshCw, User, Link2, AlertCircle, FileSpreadsheet,
-    Download, CheckCircle2, XCircle, GripVertical, Check, AlertTriangle, CheckCheck
+    Download, CheckCircle2, XCircle, GripVertical, Check, AlertTriangle, CheckCheck,
+    ClipboardPaste, ArrowDownUp
 } from "lucide-react";
 import { useFormStatus } from 'react-dom';
 import Link from "next/link";
@@ -499,15 +501,18 @@ function ParticipantForm({
                                 initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                                 transition={{ duration: 0.15 }}
                             >
-                                <div className="relative">
-                                    <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600 w-3 h-3" />
-                                    <input
-                                        name="imageUrl"
-                                        value={image}
-                                        onChange={(e) => setImage(e.target.value)}
-                                        className="w-full bg-black border-2 border-white/10 rounded-lg px-3 py-2 pl-8 text-white text-sm focus:border-blue-500 outline-none text-gray-400"
-                                        placeholder="URL de imagen..."
-                                    />
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                        <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600 w-3 h-3" />
+                                        <input
+                                            name="imageUrl"
+                                            value={image}
+                                            onChange={(e) => setImage(e.target.value)}
+                                            className="w-full bg-black border-2 border-white/10 rounded-lg px-3 py-2 pl-8 text-white text-sm focus:border-blue-500 outline-none text-gray-400"
+                                            placeholder="URL de imagen..."
+                                        />
+                                    </div>
+                                    <PasteUrlButton onPaste={setImage} />
                                 </div>
                             </motion.div>
                         ) : mode === "search" ? (
@@ -649,15 +654,18 @@ function ParticipantForm({
                                 transition={{ duration: 0.18 }}
                                 className="flex flex-col gap-2"
                             >
-                                <div className="relative">
-                                    <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 w-3.5 h-3.5" />
-                                    <input
-                                        name="imageUrl"
-                                        value={image}
-                                        onChange={(e) => setImage(e.target.value)}
-                                        className="w-full bg-black border-2 border-white/10 rounded-xl px-3 py-2.5 pl-9 text-white text-sm focus:border-blue-500 outline-none placeholder-gray-600 transition-colors"
-                                        placeholder="URL de imagen (opcional)..."
-                                    />
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 w-3.5 h-3.5" />
+                                        <input
+                                            name="imageUrl"
+                                            value={image}
+                                            onChange={(e) => setImage(e.target.value)}
+                                            className="w-full bg-black border-2 border-white/10 rounded-xl px-3 py-2.5 pl-9 text-white text-sm focus:border-blue-500 outline-none placeholder-gray-600 transition-colors"
+                                            placeholder="URL de imagen (opcional)..."
+                                        />
+                                    </div>
+                                    <PasteUrlButton onPaste={setImage} />
                                 </div>
                             </motion.div>
                         ) : mode === "search" ? (
@@ -757,6 +765,66 @@ function ParticipantForm({
 
 // ─── Sortable card (grid drag & drop con @dnd-kit) ────────────────────────────
 
+// Botón "PEGAR": lee el portapapeles y rellena el input de URL de imagen.
+function PasteUrlButton({ onPaste }: { onPaste: (text: string) => void }) {
+    const toast = useToast();
+    const handlePaste = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text && text.trim()) {
+                onPaste(text.trim());
+            } else {
+                toast.info("El portapapeles está vacío.");
+            }
+        } catch {
+            toast.error("No se pudo leer el portapapeles. Pega la URL manualmente.");
+        }
+    };
+    return (
+        <button
+            type="button"
+            onClick={handlePaste}
+            title="Pegar desde el portapapeles"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-white/10 bg-white/5 text-gray-300 text-xs font-bold hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+        >
+            <ClipboardPaste size={14} /> PEGAR
+        </button>
+    );
+}
+
+// Tarjeta compacta usada en el modo "Ordenar" (vista global en grid).
+function CompactSortableCard({ p }: { p: Participant }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+    };
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className="group relative bg-neutral-900/60 border-2 border-white/8 rounded-xl overflow-hidden cursor-grab active:cursor-grabbing touch-none hover:border-blue-500/50"
+        >
+            <div className="relative w-full aspect-square bg-neutral-800">
+                {p.imageUrl ? (
+                    <ImageWithSkeleton src={p.imageUrl} alt={p.name} className="w-full h-full object-cover pointer-events-none" />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-600 font-bold text-lg">
+                        {p.name.substring(0, 2).toUpperCase()}
+                    </div>
+                )}
+                <div className="absolute top-1 right-1 p-1 rounded bg-black/50 text-gray-300">
+                    <GripVertical size={12} />
+                </div>
+            </div>
+            <p className="px-1.5 py-1 text-[11px] text-gray-200 truncate text-center">{p.name}</p>
+        </div>
+    );
+}
+
 function SortableCard({
     p, isSelected, canManage, square, dragEnabled, onToggleSelect, onEdit, onDelete,
 }: {
@@ -783,7 +851,7 @@ function SortableCard({
         >
             <div className={`relative w-full ${square ? "aspect-square" : "aspect-[4/3]"} bg-neutral-800`}>
                 {p.imageUrl ? (
-                    <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                    <ImageWithSkeleton src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-600 font-bold text-2xl">
                         {p.name.substring(0, 2).toUpperCase()}
@@ -840,7 +908,7 @@ function OverlayCard({ p, square }: { p: Participant; square: boolean }) {
         <div className="bg-neutral-900 border-2 border-blue-500 rounded-2xl overflow-hidden shadow-2xl cursor-grabbing">
             <div className={`relative w-full ${square ? "aspect-square" : "aspect-[4/3]"} bg-neutral-800`}>
                 {p.imageUrl ? (
-                    <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                    <ImageWithSkeleton src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-600 font-bold text-2xl">
                         {p.name.substring(0, 2).toUpperCase()}
@@ -878,7 +946,10 @@ export default function ParticipantList({
     const [editIndex, setEditIndex] = useState<number | null>(null); // índice dentro de filteredData
     const [searchQuery, setSearchQuery] = useState("");
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    // Motivo del aviso de mejora: límite de nominados alcanzado o función CSV bloqueada.
+    const [upgradeReason, setUpgradeReason] = useState<"limit" | "csv">("limit");
     const [showCsvModal, setShowCsvModal] = useState(false);
+    const [isOrdering, setIsOrdering] = useState(false); // modo "Ordenar" (vista global)
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8; // nominados por página (2 columnas × 4)
 
@@ -924,8 +995,13 @@ export default function ParticipantList({
     };
 
     const handleCreateClick = () => {
-        if (isAtLimit) setShowUpgradeModal(true);
+        if (isAtLimit) { setUpgradeReason("limit"); setShowUpgradeModal(true); }
         else setIsCreating(true);
+    };
+
+    const handleCsvClick = () => {
+        if (canImportCsv) setShowCsvModal(true);
+        else { setUpgradeReason("csv"); setShowUpgradeModal(true); }
     };
 
     const isSearching = searchQuery.trim() !== "";
@@ -1009,6 +1085,29 @@ export default function ParticipantList({
         }
     };
 
+    // ── Drag & drop sobre la lista COMPLETA (modo "Ordenar") ──
+    const onDragEndAll = async (event: DragEndEvent) => {
+        setActiveId(null);
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = items.findIndex(p => p.id === String(active.id));
+        const newIndex = items.findIndex(p => p.id === String(over.id));
+        if (oldIndex < 0 || newIndex < 0) return;
+
+        const next = arrayMove(items, oldIndex, newIndex);
+        setItems(next);
+
+        const payload = next.map((p, i) => ({ id: p.id, order: i }));
+        const res = await reorderParticipants(payload, eventId);
+        if (res?.error) {
+            toast.error("No se pudo reordenar.");
+            setItems(initialData); // revertir
+        } else {
+            router.refresh();
+        }
+    };
+
     // ── Edición con paginador ──
     const editing = editIndex !== null ? filteredData[editIndex] : null;
     const gotoEdit = (dir: -1 | 1) => {
@@ -1048,12 +1147,20 @@ export default function ParticipantList({
                             className="w-full bg-neutral-900 border-2 border-white/10 rounded-full py-2 pl-9 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-colors"
                         />
                     </div>
-                    {canManageNominees && canImportCsv && (
+                    {canManageNominees && items.length > 1 && (
                         <button
-                            onClick={() => setShowCsvModal(true)}
+                            onClick={() => setIsOrdering(o => !o)}
+                            className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-colors whitespace-nowrap cursor-pointer border-2 ${isOrdering ? "bg-blue-600 text-white border-blue-500" : "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"}`}
+                        >
+                            {isOrdering ? <><X size={14} /> Salir</> : <><ArrowDownUp size={14} /> Ordenar</>}
+                        </button>
+                    )}
+                    {canManageNominees && (
+                        <button
+                            onClick={handleCsvClick}
                             className="bg-amber-500/10 text-amber-400 border-2 border-amber-500/20 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 hover:bg-amber-500/20 transition-colors whitespace-nowrap cursor-pointer"
                         >
-                            <FileSpreadsheet size={14} /> CSV
+                            <FileSpreadsheet size={14} /> CSV {!canImportCsv && <Lock size={11} />}
                         </button>
                     )}
                     {canManageNominees && (
@@ -1083,12 +1190,16 @@ export default function ParticipantList({
                         >
                             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none -mr-16 -mt-16" />
                             <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                                <Lock className="text-amber-500" /> Límite Alcanzado
+                                <Lock className="text-amber-500" /> {upgradeReason === "csv" ? "Función CSV bloqueada" : "Límite Alcanzado"}
                             </h2>
                             <p className="text-gray-400 text-sm mb-6">
-                                Has alcanzado el máximo de <strong>{currentLimit} {square ? "elementos" : "participantes"}</strong> en tu plan actual.
+                                {upgradeReason === "csv" ? (
+                                    <>La importación y exportación por <strong>CSV</strong> está disponible en los planes <strong>Enterprise</strong> y <strong>Unlimited</strong>. Mejora tu plan para gestionar nominados en masa.</>
+                                ) : (
+                                    <>Has alcanzado el máximo de <strong>{currentLimit} {square ? "elementos" : "participantes"}</strong> en tu plan actual.</>
+                                )}
                             </p>
-                            <div className={`bg-black/40 rounded-xl border-2 border-white/5 p-4 mb-8 space-y-3 ${square ? "hidden" : ""}`}>
+                            <div className={`bg-black/40 rounded-xl border-2 border-white/5 p-4 mb-8 space-y-3 ${square || upgradeReason === "csv" ? "hidden" : ""}`}>
                                 <div className="flex justify-between items-center text-sm border-b-2 border-white/5 pb-2">
                                     <span className="text-gray-500">Tu Plan ({PLANS[planKey].name})</span>
                                     <span className="font-mono text-red-400">{currentLimit} participantes</span>
@@ -1130,7 +1241,7 @@ export default function ParticipantList({
 
             {/* ── Barra de selección masiva ── */}
             <AnimatePresence>
-                {selected.size > 0 && (
+                {!isOrdering && selected.size > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                         className="flex flex-wrap items-center gap-3 p-3 rounded-xl border-2 border-blue-500/30 bg-blue-500/5"
@@ -1158,7 +1269,28 @@ export default function ParticipantList({
                 )}
             </AnimatePresence>
 
-            {/* ── Grid de nominados (drag & drop en grid con @dnd-kit) ── */}
+            {/* ── Modo "Ordenar": vista global compacta (grid 8 / 4 col) ── */}
+            {isOrdering ? (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-xs text-blue-300 bg-blue-500/5 border-2 border-blue-500/20 rounded-xl px-4 py-2.5">
+                        <ArrowDownUp size={14} className="shrink-0" />
+                        <span>Arrastra cualquier nominado para reordenar toda la lista. Pulsa <strong>Salir</strong> al terminar.</span>
+                    </div>
+                    <DndContext id="nominados-ordenar" sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEndAll}>
+                        <SortableContext items={items.map(p => p.id)} strategy={rectSortingStrategy}>
+                            <div className="grid grid-cols-4 md:grid-cols-8 gap-2 items-start">
+                                {items.map((p) => (
+                                    <CompactSortableCard key={p.id} p={p} />
+                                ))}
+                            </div>
+                        </SortableContext>
+                        <DragOverlay>
+                            {activeParticipant ? <OverlayCard p={activeParticipant} square /> : null}
+                        </DragOverlay>
+                    </DndContext>
+                </div>
+            ) : (
+            /* ── Grid de nominados (drag & drop en grid con @dnd-kit) ── */
             <DndContext id="nominados" sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
                 <SortableContext items={paginatedData.map(p => p.id)} strategy={rectSortingStrategy}>
                     <div
@@ -1187,8 +1319,9 @@ export default function ParticipantList({
                     {activeParticipant ? <OverlayCard p={activeParticipant} square={square} /> : null}
                 </DragOverlay>
             </DndContext>
+            )}
 
-            {filteredData.length === 0 && (
+            {!isOrdering && filteredData.length === 0 && (
                 <div className="text-center py-12 border-2 border-dashed border-white/8 rounded-xl text-gray-600 text-sm flex flex-col items-center gap-2">
                     <User size={28} className="text-gray-700" />
                     {searchQuery ? "No se encontraron nominados." : "Aún no hay nominados. Pulsa \"Nuevo\" para empezar."}
@@ -1196,7 +1329,7 @@ export default function ParticipantList({
             )}
 
             {/* ── Pagination ── */}
-            {totalPages > 1 && (
+            {!isOrdering && totalPages > 1 && (
                 <div className="flex justify-center items-center gap-4 pt-4 border-t-2 border-white/5">
                     <button
                         onClick={() => currentPage > 1 && setCurrentPage(c => c - 1)}

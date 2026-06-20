@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Lock, TrendingUp, Users, ListOrdered, CircleHelp, Brush, ThumbsUp, ThumbsDown, Star, ImageIcon, Eye, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ModeStats, Voter } from "@/app/lib/stats-actions";
+import ImageWithSkeleton from "@/components/ui/ImageWithSkeleton";
 
 function KpiCard({ title, value, icon, subtext }: { title: string; value: string | number; icon: React.ReactNode; subtext?: string }) {
     return (
@@ -148,8 +149,8 @@ export default function ModeStatistics({
                                 const max = Math.max(...p.tiers.map((t) => t.count), 1);
                                 return (
                                     <div key={p.id} className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-neutral-800 border-2 border-white/10 shrink-0 flex items-center justify-center text-xs font-bold">
-                                            {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" /> : p.name.slice(0, 2).toUpperCase()}
+                                        <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-neutral-800 border-2 border-white/10 shrink-0 flex items-center justify-center text-xs font-bold">
+                                            {p.imageUrl ? <ImageWithSkeleton src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" /> : p.name.slice(0, 2).toUpperCase()}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
@@ -262,7 +263,7 @@ export default function ModeStatistics({
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                         {stats.top.map((d, i) => (
                             <div key={d.id} className="rounded-xl overflow-hidden border-2 border-white/10 bg-neutral-900 relative">
-                                {d.imageUrl ? <img src={d.imageUrl} alt={`#${i + 1}`} className="w-full aspect-[3/2] object-cover bg-white" /> : <div className="w-full aspect-[3/2] bg-neutral-800" />}
+                                {d.imageUrl ? <ImageWithSkeleton src={d.imageUrl} alt={`#${i + 1}`} className="w-full aspect-[3/2] object-cover bg-white" skeletonClassName="bg-neutral-300" /> : <div className="w-full aspect-[3/2] bg-neutral-800" />}
                                 {canViewVoters && (
                                     <button
                                         onClick={() => setModal({
