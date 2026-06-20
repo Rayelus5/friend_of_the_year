@@ -16,12 +16,13 @@ const PAGE_SIZE = 8;
 export default async function AdminEventsPage({
     searchParams,
 }: {
-    searchParams: Promise<{ q?: string; status?: string; page?: string; userId?: string }>;
+    searchParams: Promise<{ q?: string; status?: string; mode?: string; page?: string; userId?: string }>;
 }) {
     const params = await searchParams;
     const query = params?.q || "";
     const userId = params?.userId || "";
     const statusFilter = params?.status;
+    const modeFilter = params?.mode;
     const pageRaw = params?.page ?? "1";
     const currentPage = Math.max(1, Number(pageRaw) || 1);
 
@@ -40,6 +41,11 @@ export default async function AdminEventsPage({
 
     if (statusFilter && statusFilter !== "ALL") {
         whereClause.status = statusFilter;
+    }
+
+    const EVENT_MODES = ["GALA", "TIERLIST", "PREGUNTAS", "DIBUJO"];
+    if (modeFilter && modeFilter !== "ALL" && EVENT_MODES.includes(modeFilter)) {
+        whereClause.mode = modeFilter;
     }
 
     // Fetch selected user label to pre-populate combobox badge server-side
@@ -75,6 +81,7 @@ export default async function AdminEventsPage({
         title: e.title,
         slug: e.slug,
         status: e.status,
+        mode: e.mode,
         isPublic: e.isPublic,
         createdAt: e.createdAt.toISOString(),
         user: {
@@ -111,6 +118,9 @@ export default async function AdminEventsPage({
                         {statusFilter && (
                             <input type="hidden" name="status" value={statusFilter} />
                         )}
+                        {modeFilter && (
+                            <input type="hidden" name="mode" value={modeFilter} />
+                        )}
                         {userId && (
                             <input type="hidden" name="userId" value={userId} />
                         )}
@@ -126,9 +136,18 @@ export default async function AdminEventsPage({
 
                     {/* Status tabs */}
                     <div className="flex bg-neutral-900 border-2 border-white/10 rounded-lg p-1">
-                        <FilterLink status="ALL" current={statusFilter} label="Todos" q={query} userId={userId} />
-                        <FilterLink status="APPROVED" current={statusFilter} label="Publicados" q={query} userId={userId} />
-                        <FilterLink status="PENDING" current={statusFilter} label="Pendientes" q={query} userId={userId} />
+                        <FilterLink status="ALL" current={statusFilter} label="Todos" q={query} userId={userId} mode={modeFilter} />
+                        <FilterLink status="APPROVED" current={statusFilter} label="Publicados" q={query} userId={userId} mode={modeFilter} />
+                        <FilterLink status="PENDING" current={statusFilter} label="Pendientes" q={query} userId={userId} mode={modeFilter} />
+                    </div>
+
+                    {/* Mode tabs */}
+                    <div className="flex bg-neutral-900 border-2 border-white/10 rounded-lg p-1">
+                        <ModeFilterLink mode="ALL" current={modeFilter} label="Todos" q={query} userId={userId} status={statusFilter} />
+                        <ModeFilterLink mode="GALA" current={modeFilter} label="Gala" q={query} userId={userId} status={statusFilter} />
+                        <ModeFilterLink mode="TIERLIST" current={modeFilter} label="Tierlist" q={query} userId={userId} status={statusFilter} />
+                        <ModeFilterLink mode="PREGUNTAS" current={modeFilter} label="Preguntas" q={query} userId={userId} status={statusFilter} />
+                        <ModeFilterLink mode="DIBUJO" current={modeFilter} label="Dibujo" q={query} userId={userId} status={statusFilter} />
                     </div>
                 </div>
             </div>
@@ -150,6 +169,7 @@ export default async function AdminEventsPage({
                 query={{
                     q: query || undefined,
                     status: statusFilter || undefined,
+                    mode: modeFilter || undefined,
                     userId: userId || undefined,
                 }}
             />
@@ -163,16 +183,54 @@ function FilterLink({
     label,
     q,
     userId,
+    mode,
 }: {
     status: string;
     current?: string;
     label: string;
     q?: string;
     userId?: string;
+    mode?: string;
 }) {
     const isActive = (status === "ALL" && !current) || current === status;
     const params = new URLSearchParams();
     if (status !== "ALL") params.set("status", status);
+    if (mode) params.set("mode", mode);
+    if (q) params.set("q", q);
+    if (userId) params.set("userId", userId);
+    const qs = params.toString();
+
+    return (
+        <Link
+            href={qs ? `?${qs}` : "?"}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                isActive ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
+            }`}
+        >
+            {label}
+        </Link>
+    );
+}
+
+function ModeFilterLink({
+    mode,
+    current,
+    label,
+    q,
+    userId,
+    status,
+}: {
+    mode: string;
+    current?: string;
+    label: string;
+    q?: string;
+    userId?: string;
+    status?: string;
+}) {
+    const isActive = (mode === "ALL" && !current) || current === mode;
+    const params = new URLSearchParams();
+    if (mode !== "ALL") params.set("mode", mode);
+    if (status) params.set("status", status);
     if (q) params.set("q", q);
     if (userId) params.set("userId", userId);
     const qs = params.toString();

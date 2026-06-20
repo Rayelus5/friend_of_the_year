@@ -7,18 +7,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bouncy } from "ldrs/react";
 import "ldrs/react/Bouncy.css";
 import { useToast } from "@/components/ui/ToastProvider";
-import { createVoteSnapshot, deleteVoteSnapshot, type VoteSnapshotDTO } from "@/app/lib/snapshot-actions";
+import { createVoteSnapshot, deleteVoteSnapshot, type VoteSnapshotDTO, type SnapshotMode } from "@/app/lib/snapshot-actions";
 
 function formatDate(d: Date | string) {
     return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+const GROUP_WORD: Record<SnapshotMode, string> = {
+    GALA: "categorías",
+    TIERLIST: "nominados",
+    PREGUNTAS: "preguntas",
+};
+
 export default function VoteSnapshotsSection({
     eventId,
+    mode,
     initialSnapshots,
     canManage,
 }: {
     eventId: string;
+    mode: SnapshotMode;
     initialSnapshots: VoteSnapshotDTO[];
     canManage: boolean;
 }) {
@@ -118,7 +126,7 @@ export default function VoteSnapshotsSection({
                                         <div className="min-w-0">
                                             <p className="font-bold text-white truncate">{snap.title}</p>
                                             <p className="text-[11px] text-gray-500">
-                                                {formatDate(snap.createdAt)} · {snap.totalVotes} votos · {snap.data.totalPolls} categorías
+                                                {formatDate(snap.createdAt)} · {snap.totalVotes} votos · {snap.data.totalGroups} {GROUP_WORD[snap.data.mode] ?? GROUP_WORD[mode]}
                                             </p>
                                         </div>
                                     </button>
@@ -143,13 +151,13 @@ export default function VoteSnapshotsSection({
                                             className="overflow-hidden"
                                         >
                                             <div className="px-4 pb-4 space-y-2">
-                                                {snap.data.polls.map((poll, i) => (
+                                                {snap.data.groups.map((group, i) => (
                                                     <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-white/5">
-                                                        <span className="text-sm text-gray-300 truncate">{poll.title}</span>
+                                                        <span className="text-sm text-gray-300 truncate">{group.title}</span>
                                                         <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-300 shrink-0">
                                                             <Trophy size={12} />
-                                                            {poll.winner ?? "Sin votos"}
-                                                            <span className="text-gray-500 font-normal">({poll.totalVotes})</span>
+                                                            {group.winner ?? "Sin votos"}
+                                                            <span className="text-gray-500 font-normal">({group.totalVotes})</span>
                                                         </span>
                                                     </div>
                                                 ))}

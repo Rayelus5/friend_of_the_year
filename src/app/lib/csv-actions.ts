@@ -62,7 +62,7 @@ async function getEventAccessAndPlan(eventId: string, userId: string, permission
     const [event, collab, user] = await Promise.all([
         prisma.event.findUnique({
             where: { id: eventId },
-            select: { userId: true, mode: true },
+            select: { userId: true, mode: true, status: true },
         }),
         prisma.eventCollaborator.findUnique({
             where: { eventId_userId: { eventId, userId } },
@@ -80,6 +80,12 @@ async function getEventAccessAndPlan(eventId: string, userId: string, permission
 
     const permGranted = isOwner || isAdmin || !!(collab?.[permission]);
     if (!permGranted) return { hasAccess: false, owner: null, mode: null };
+
+    // Bloqueo de edición: no se permite importar por CSV mientras el evento esté
+    // publicado (APPROVED) o en revisión (PENDING). Los admins sí pueden.
+    if (!isAdmin && (event.status === "APPROVED" || event.status === "PENDING")) {
+        return { hasAccess: false, owner: null, mode: null };
+    }
 
     // El plan se calcula siempre sobre el dueño real del evento, no sobre el admin.
     const owner = await prisma.user.findUnique({ where: { id: event.userId } });

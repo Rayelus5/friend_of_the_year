@@ -13,10 +13,18 @@ type EventRow = {
     title: string;
     slug: string;
     status: string;
+    mode: string;
     isPublic: boolean;
     createdAt: string; // ISO
     user: { name: string | null; email: string | null; image: string | null };
     _count: { polls: number; participants: number };
+};
+
+const MODE_BADGE: Record<string, { label: string; className: string }> = {
+    GALA: { label: "Gala", className: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+    TIERLIST: { label: "Tierlist", className: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+    PREGUNTAS: { label: "Preguntas", className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+    DIBUJO: { label: "Dibujo", className: "bg-pink-500/10 text-pink-400 border-pink-500/20" },
 };
 
 export default function AdminEventsTableClient({
@@ -188,6 +196,7 @@ export default function AdminEventsTableClient({
                             <th className="p-3 font-medium w-[60px]">Sel</th>
                             <th className="p-3 font-medium">Evento</th>
                             <th className="p-3 font-medium">Creador</th>
+                            <th className="p-3 font-medium">Modo</th>
                             <th className="p-3 font-medium">Estado</th>
                             <th className="p-3 font-medium">Privacidad</th>
                             <th className="p-3 font-medium">Stats</th>
@@ -227,6 +236,17 @@ export default function AdminEventsTableClient({
                                             <div className="text-[10px] text-gray-500 truncate">{event.user.email || "—"}</div>
                                         </div>
                                     </div>
+                                </td>
+
+                                <td className="p-3">
+                                    {(() => {
+                                        const badge = MODE_BADGE[event.mode] ?? { label: event.mode, className: "bg-gray-800 text-gray-400 border-gray-700" };
+                                        return (
+                                            <span className={clsx("inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold border-2", badge.className)}>
+                                                {badge.label}
+                                            </span>
+                                        );
+                                    })()}
                                 </td>
 
                                 <td className="p-3">

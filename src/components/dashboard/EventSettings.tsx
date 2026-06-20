@@ -91,7 +91,7 @@ type Permissions = {
     canRegenerateKey: boolean;
 };
 
-export default function EventSettings({ event, planSlug, permissions }: { event: EventData, planSlug: string, permissions?: Permissions }) {
+export default function EventSettings({ event, planSlug, permissions, isAdmin = false }: { event: EventData, planSlug: string, permissions?: Permissions, isAdmin?: boolean }) {
     const canEdit = permissions?.canEditSettings !== false;
     const canDelete = permissions?.canDeleteEvent !== false;
     const canRotateKey = permissions?.canRegenerateKey !== false;
@@ -122,7 +122,8 @@ export default function EventSettings({ event, planSlug, permissions }: { event:
 
     // Un evento publicado (APROBADO) o en revisión (PENDING) queda bloqueado:
     // hay que pasarlo a borrador con "Quiero hacer cambios" para poder editarlo.
-    const isLocked = isApproved || isPending;
+    // Los admins/moderadores pueden editar siempre (igual que con nominados/categorías).
+    const isLocked = (isApproved || isPending) && !isAdmin;
     const editable = canEdit && !isLocked;
 
     // Solo se puede tocar la visibilidad cuando está aprobado

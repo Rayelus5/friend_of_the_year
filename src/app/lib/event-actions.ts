@@ -27,6 +27,7 @@ async function checkEventAccess(
             where: { id: eventId },
             select: {
                 userId: true,
+                status: true,
                 defaultCanEditSettings: true,
                 defaultCanRegenerateKey: true,
                 defaultCanDeleteEvent: true,
@@ -40,9 +41,20 @@ async function checkEventAccess(
         prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
     ]);
     if (!event) return false;
-    if (event.userId === userId) return true;
     // Los administradores y moderadores pueden gestionar cualquier evento (igual que en Gala).
     if (user?.role === "ADMIN" || user?.role === "MODERATOR") return true;
+
+    // Bloqueo de edición: nominados/categorías no se pueden editar mientras el evento
+    // esté publicado (APPROVED) o en revisión (PENDING). Hay que volver a borrador
+    // desde Ajustes ("Quiero hacer cambios"). No afecta a los admins.
+    if (
+        (permission === "canManageNominees" || permission === "canManagePolls") &&
+        (event.status === "APPROVED" || event.status === "PENDING")
+    ) {
+        return false;
+    }
+
+    if (event.userId === userId) return true;
     if (!collab) return false;
 
     const defaultMap: Record<CollabPermission, boolean> = {

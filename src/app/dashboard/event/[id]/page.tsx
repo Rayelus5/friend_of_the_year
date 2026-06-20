@@ -125,6 +125,16 @@ export default async function EventDashboardPage({ params }: Props) {
         permissions.canViewStats = collaborator.canViewStats ?? event.defaultCanViewStats;
     }
 
+    // Bloqueo de edición de contenido: mientras el evento esté publicado (APPROVED)
+    // o en revisión (PENDING), nadie salvo admin puede editar nominados/categorías/
+    // tiers/preguntas. Hay que volver a borrador desde Ajustes ("Quiero hacer cambios").
+    const editingLocked =
+        (event.status === "APPROVED" || event.status === "PENDING") && !isAdmin;
+    if (editingLocked) {
+        permissions.canManageNominees = false;
+        permissions.canManagePolls = false;
+    }
+
     // 4. Obtener estadísticas del evento (GALA usa el panel clásico; el resto, stats por modo)
     const isGala = event.mode === "GALA";
     // La identidad de votantes solo se adjunta si el plan lo permite (plus/unlimited o admin)
@@ -136,7 +146,19 @@ export default async function EventDashboardPage({ params }: Props) {
     const modeStats = !isGala
         ? await getModeStats(event.id, event.mode as "TIERLIST" | "PREGUNTAS" | "DIBUJO", { includeVoters: canSeeVoters })
         : null;
-    const snapshots = isGala && permissions.canViewStats ? await listVoteSnapshots(event.id) : [];
+    const snapshots = event.mode !== "DIBUJO" && permissions.canViewStats ? await listVoteSnapshots(event.id) : [];
+
+    // Aviso reutilizable cuando el contenido está bloqueado por publicación/revisión.
+    const lockedBanner = editingLocked ? (
+        <div className="mb-5 flex items-start gap-3 p-4 rounded-xl border-2 border-blue-500/30 bg-blue-500/5">
+            <Lock size={16} className="text-blue-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-200/90 leading-relaxed">
+                El evento está {event.status === "APPROVED" ? "publicado" : "en revisión"}, así que su contenido está
+                bloqueado. Para editarlo, ve a <strong>Ajustes</strong> y pulsa <strong>Quiero hacer cambios</strong> para
+                volver a ponerlo en borrador.
+            </p>
+        </div>
+    ) : null;
 
     return (
         <main className="min-h-screen bg-black text-white">
@@ -192,6 +214,7 @@ export default async function EventDashboardPage({ params }: Props) {
                             event={event}
                             planSlug={plan.slug}
                             permissions={permissions}
+                            isAdmin={isAdmin}
                         />
                     }
                     participants={
@@ -202,6 +225,7 @@ export default async function EventDashboardPage({ params }: Props) {
                                     {event.mode === "TIERLIST" ? "Nominados de la Tierlist" : "Participantes del Evento"}
                                 </h2>
                             </div>
+                            {lockedBanner}
                             <ParticipantList
                                 initialData={event.participants}
                                 eventId={event.id}
@@ -218,6 +242,7 @@ export default async function EventDashboardPage({ params }: Props) {
                                 <Layers className="w-6 h-6 text-gray-400" />
                                 <h2 className="text-xl font-bold">Tiers de la Tierlist</h2>
                             </div>
+                            {lockedBanner}
                             <TierlistManager
                                 initialTiers={event.tiers}
                                 eventId={event.id}
@@ -232,6 +257,7 @@ export default async function EventDashboardPage({ params }: Props) {
                                 <CircleHelp className="w-6 h-6 text-gray-400" />
                                 <h2 className="text-xl font-bold">Preguntas del Formulario</h2>
                             </div>
+                            {lockedBanner}
                             <QuestionManager
                                 initialQuestions={event.questions}
                                 eventId={event.id}
@@ -265,6 +291,7 @@ export default async function EventDashboardPage({ params }: Props) {
                                 <Folders className="w-6 h-6 text-gray-400" />
                                 <h2 className="text-xl font-bold">Categorías del Evento</h2>
                             </div>
+                            {lockedBanner}
                             <PollList
                                 initialPolls={event.polls}
                                 allParticipants={event.participants}
@@ -276,31 +303,33 @@ export default async function EventDashboardPage({ params }: Props) {
                         </div>
                     }
                     stats={
-                        isGala ? (
-                            <div className="space-y-8">
+                        <div className="space-y-8">
+                            {isGala ? (
                                 <EventStatistics
                                     stats={stats}
                                     planSlug={plan.slug}
                                     isAdmin={isAdmin}
                                     canViewStats={permissions.canViewStats}
                                 />
-                                {permissions.canViewStats && (
-                                    <VoteSnapshotsSection
-                                        eventId={event.id}
-                                        initialSnapshots={snapshots}
-                                        canManage={isOwner || isAdmin}
-                                    />
-                                )}
-                            </div>
-                        ) : (
-                            <ModeStatistics
-                                stats={modeStats}
-                                planSlug={plan.slug}
-                                isAdmin={isAdmin}
-                                isAnonymousVoting={event.isAnonymousVoting}
-                                canViewStats={permissions.canViewStats}
-                            />
-                        )
+                            ) : (
+                                <ModeStatistics
+                                    stats={modeStats}
+                                    planSlug={plan.slug}
+                                    isAdmin={isAdmin}
+                                    isAnonymousVoting={event.isAnonymousVoting}
+                                    canViewStats={permissions.canViewStats}
+                                />
+                            )}
+                            {/* Ediciones guardadas: disponible en todos los modos menos DIBUJO */}
+                            {event.mode !== "DIBUJO" && permissions.canViewStats && (
+                                <VoteSnapshotsSection
+                                    eventId={event.id}
+                                    mode={event.mode as "GALA" | "TIERLIST" | "PREGUNTAS"}
+                                    initialSnapshots={snapshots}
+                                    canManage={isOwner || isAdmin}
+                                />
+                            )}
+                        </div>
                     }
                     team={
                         <TeamTab
