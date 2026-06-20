@@ -28,6 +28,7 @@ export async function GET(
                         select: {
                             id: true,
                             name: true,
+                            image: true,
                         },
                     },
                 },
@@ -57,6 +58,7 @@ export async function GET(
         sender: {
             id: m.sender.id,
             name: m.sender.name,
+            image: m.sender.image,
         },
     }));
 

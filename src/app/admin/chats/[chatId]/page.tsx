@@ -9,6 +9,8 @@ import {
 } from "@/app/lib/support-actions";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, UserCheck, Lock, RotateCcw, Trash2, CheckCircle2 } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
 
 // Server actions wrapper para usar en <form action={...}>
 async function assignChatAction(formData: FormData) {
@@ -71,6 +73,7 @@ export default async function AdminChatDetailPage({ params }: PageProps) {
                     id: true,
                     name: true,
                     email: true,
+                    image: true,
                 },
             },
             messages: {
@@ -80,6 +83,7 @@ export default async function AdminChatDetailPage({ params }: PageProps) {
                         select: {
                             id: true,
                             name: true,
+                            image: true,
                         },
                     },
                 },
@@ -106,6 +110,7 @@ export default async function AdminChatDetailPage({ params }: PageProps) {
         sender: {
             id: m.sender.id,
             name: m.sender.name,
+            image: m.sender.image,
         },
     }));
 
@@ -114,115 +119,83 @@ export default async function AdminChatDetailPage({ params }: PageProps) {
         chat.adminId !== null && chat.adminId === currentUserId;
 
     return (
-        <main className="min-h-screen bg-black text-white">
-            <header className="border-b-2 border-white/10 bg-neutral-900/30">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div>
-                        <div className="text-xs text-gray-400 mb-1">
-                            <Link href="/admin/chats" className="hover:text-white">
-                                Chats de soporte
-                            </Link>{" "}
-                            / {chat.user.name || chat.user.email}
-                        </div>
-                        <h1 className="text-xl font-bold flex items-center gap-2">
-                            Ticket de soporte
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300">
-                                {chat.user.email}
-                            </span>
-                        </h1>
-                    </div>
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-4">
+            {/* Breadcrumb */}
+            <Link href="/admin/chats" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors w-fit">
+                <ArrowLeft size={16} /> Volver a los chats
+            </Link>
 
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                        {chat.adminId && (
-                            <span className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-300 border-2 border-blue-500/30">
-                                Asignado a:{" "}
-                                {isAssignedToCurrent
-                                    ? "Tú"
-                                    : assignedAdminName ?? "Otro administrador"}
-                            </span>
-                        )}
+            {/* Cabecera del ticket */}
+            <div className="bg-neutral-900 border-2 border-white/10 rounded-2xl p-5 flex flex-col md:flex-row md:items-center gap-4">
+                <Avatar name={chat.user.name} image={chat.user.image} size="lg" />
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <h1 className="text-lg font-bold text-white truncate">{chat.user.name || "Usuario"}</h1>
                         <span
-                            className={`px-2 py-1 rounded-full border-2 ${chat.isClosed
-                                    ? "bg-red-500/10 text-red-300 border-red-500/40"
-                                    : "bg-emerald-500/10 text-emerald-300 border-emerald-500/40"
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border-2 ${chat.isClosed
+                                ? "bg-red-500/10 text-red-300 border-red-500/40"
+                                : "bg-emerald-500/10 text-emerald-300 border-emerald-500/40"
                                 }`}
                         >
-                            {chat.isClosed ? "Ticket cerrado" : "Ticket abierto"}
+                            {chat.isClosed ? <Lock size={11} /> : <CheckCircle2 size={11} />}
+                            {chat.isClosed ? "Cerrado" : "Abierto"}
                         </span>
-                    </div>
-                </div>
-            </header>
-
-            <div className="max-w-5xl mx-auto px-6 py-6 space-y-4">
-                {/* Acciones de admin */}
-                <div className="flex flex-wrap gap-3 justify-between items-center">
-                    <div className="text-xs text-gray-400">
-                        Usuario:{" "}
-                        <span className="font-semibold text-gray-200">
-                            {chat.user.name || chat.user.email}
-                        </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                        {/* Asignarme el chat */}
-                        <form action={assignChatAction}>
-                            <input type="hidden" name="chatId" value={chat.id} />
-                            <button
-                                type="submit"
-                                className="px-3 py-2 text-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer disabled:opacity-60"
-                                disabled={isAssignedToCurrent}
-                            >
-                                {isAssignedToCurrent
-                                    ? "Ya asignado a ti"
-                                    : chat.adminId
-                                        ? "Reasignarme este chat"
-                                        : "Asignarme este chat"}
-                            </button>
-                        </form>
-
-                        {/* Cerrar / Reabrir chat */}
-                        {chat.isClosed ? (
-                            <form action={reopenChatAction}>
-                                <input type="hidden" name="chatId" value={chat.id} />
-                                <button
-                                    type="submit"
-                                    className="px-3 py-2 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
-                                >
-                                    Reabrir chat
-                                </button>
-                            </form>
-                        ) : (
-                            <form action={closeChatAction}>
-                                <input type="hidden" name="chatId" value={chat.id} />
-                                <button
-                                    type="submit"
-                                    className="px-3 py-2 text-xs rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer"
-                                >
-                                    Cerrar chat
-                                </button>
-                            </form>
+                        {chat.adminId && (
+                            <span className="px-2 py-0.5 rounded-full text-[11px] bg-blue-500/10 text-blue-300 border-2 border-blue-500/30">
+                                Asignado a: {isAssignedToCurrent ? "Tú" : assignedAdminName ?? "Otro administrador"}
+                            </span>
                         )}
-
-                        {/* Eliminar chat */}
-                        <form action={deleteChatAction}>
-                            <input type="hidden" name="chatId" value={chat.id} />
-                            <button
-                                type="submit"
-                                className="px-3 py-2 text-xs rounded-lg bg-red-900 hover:bg-red-800 text-red-200 font-bold cursor-pointer border-2 border-red-700/60"
-                            >
-                                Eliminar chat
-                            </button>
-                        </form>
                     </div>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{chat.user.email}</p>
                 </div>
 
-                {/* Interfaz de Chat */}
+                {/* Acciones */}
+                <div className="flex flex-wrap gap-2 shrink-0">
+                    <form action={assignChatAction}>
+                        <input type="hidden" name="chatId" value={chat.id} />
+                        <button
+                            type="submit"
+                            disabled={isAssignedToCurrent}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <UserCheck size={14} />
+                            {isAssignedToCurrent ? "Asignado a ti" : chat.adminId ? "Reasignarme" : "Asignarme"}
+                        </button>
+                    </form>
+
+                    {chat.isClosed ? (
+                        <form action={reopenChatAction}>
+                            <input type="hidden" name="chatId" value={chat.id} />
+                            <button type="submit" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition-colors">
+                                <RotateCcw size={14} /> Reabrir
+                            </button>
+                        </form>
+                    ) : (
+                        <form action={closeChatAction}>
+                            <input type="hidden" name="chatId" value={chat.id} />
+                            <button type="submit" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-gray-200 border-2 border-white/10 font-bold cursor-pointer transition-colors">
+                                <Lock size={14} /> Cerrar
+                            </button>
+                        </form>
+                    )}
+
+                    <form action={deleteChatAction}>
+                        <input type="hidden" name="chatId" value={chat.id} />
+                        <button type="submit" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 font-bold cursor-pointer border-2 border-red-500/30 transition-colors">
+                            <Trash2 size={14} /> Eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            {/* Interfaz de Chat */}
+            <div className="h-[calc(100dvh-20rem)] min-h-[480px]">
                 <ChatInterface
                     chatId={chat.id}
                     initialMessages={initialMessages}
                     currentUserId={currentUserId}
                     isClosed={chat.isClosed}
-                    otherUserLabel={chat.user.email ?? chat.user.name ?? "Usuario"}
+                    otherParty={{ name: chat.user.name, image: chat.user.image, email: chat.user.email }}
                 />
             </div>
         </main>

@@ -4,10 +4,12 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createSupportChat } from "@/app/lib/support-actions";
 import { MessageCirclePlus } from "lucide-react";
+import { useToast } from "@/components/ui/ToastProvider";
 
 export default function CreateTicketButton() {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
+    const toast = useToast();
 
     const handleClick = () => {
         startTransition(async () => {
@@ -15,8 +17,8 @@ export default function CreateTicketButton() {
             if (res?.chatId) {
                 router.push(`/dashboard/support/${res.chatId}`);
             } else {
-                // Aquí podrías meter un toast de error
                 console.error(res?.error || "Error al crear ticket");
+                toast.error(res?.error || "No se pudo crear el ticket. Inténtalo de nuevo.");
             }
         });
     };

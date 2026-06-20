@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { GripVertical, Plus, Pencil, Trash2, Save, X, Layers, Search, FileSpreadsheet, Sparkles, Loader2 } from "lucide-react";
+import { GripVertical, Plus, Pencil, Trash2, Save, X, Layers, Search, FileSpreadsheet, Sparkles, Loader2, Lock } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PLANS } from "@/lib/plans";
 import { createTier, updateTier, deleteTier, reorderTiers } from "@/app/lib/tierlist-actions";
@@ -60,6 +61,7 @@ export default function TierlistManager({
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [showCsv, setShowCsv] = useState(false);
+    const [showCsvUpgrade, setShowCsvUpgrade] = useState(false);
     const [applyingTemplate, setApplyingTemplate] = useState<string | null>(null);
 
     useEffect(() => {
@@ -170,12 +172,12 @@ export default function TierlistManager({
                             className="w-full bg-neutral-900 border-2 border-white/10 rounded-full py-2 pl-9 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-colors"
                         />
                     </div>
-                    {canManage && canImportCsv && (
+                    {canManage && (
                         <button
-                            onClick={() => setShowCsv(true)}
+                            onClick={() => (canImportCsv ? setShowCsv(true) : setShowCsvUpgrade(true))}
                             className="bg-amber-500/10 text-amber-400 border-2 border-amber-500/20 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 hover:bg-amber-500/20 transition-colors whitespace-nowrap cursor-pointer"
                         >
-                            <FileSpreadsheet size={14} /> CSV
+                            <FileSpreadsheet size={14} /> CSV {!canImportCsv && <Lock size={11} />}
                         </button>
                     )}
                     {canManage && (
@@ -281,6 +283,39 @@ export default function TierlistManager({
                     onClose={() => setShowCsv(false)}
                     onImported={() => router.refresh()}
                 />
+            )}
+
+            {/* Aviso de mejora cuando CSV está bloqueado por plan */}
+            {showCsvUpgrade && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setShowCsvUpgrade(false)}
+                >
+                    <div
+                        className="bg-neutral-900 border-2 border-white/10 rounded-2xl w-full max-w-lg p-8 shadow-2xl relative overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 rounded-full blur-[80px] pointer-events-none -mr-16 -mt-16" />
+                        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                            <Lock className="text-amber-500" /> Función CSV bloqueada
+                        </h2>
+                        <p className="text-gray-400 text-sm mb-8">
+                            La importación por <strong>CSV</strong> está disponible en los planes <strong>Enterprise</strong> y{" "}
+                            <strong>Unlimited</strong>. Mejora tu plan para crear tiers en masa.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCsvUpgrade(false)}
+                                className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-gray-300 font-bold transition-colors cursor-pointer"
+                            >
+                                Cancelar
+                            </button>
+                            <Link href="/premium" className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-center shadow-lg transition-colors">
+                                Mejorar Plan
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

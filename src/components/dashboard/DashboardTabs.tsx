@@ -13,7 +13,8 @@ import {
 } from "@/app/lib/user-notification-actions";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import { BookCheck, Users, Mail } from "lucide-react";
+import { BookCheck, Users, Mail, ChevronLeft, ChevronRight, Lock, CheckCircle2, MessagesSquare, Bell, BellOff, Info } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
 import ProfileForm from "@/components/dashboard/ProfileForm";
 import PhoneBizumCard from "@/components/dashboard/PhoneBizumCard";
 import IngresosTab, { type PaymentRow, type WithdrawalRow } from "@/components/dashboard/IngresosTab";
@@ -409,7 +410,7 @@ function EventsTab({
             </div>
 
             {total > PAGE_SIZE && (
-                <Pagination className="mt-8" page={page} setPage={setPage} totalPages={totalPages} />
+                <Pagination className="mt-8" page={page} setPage={setPage} totalPages={totalPages} total={total} itemLabel="eventos" />
             )}
 
             {/* Eventos compartidos (invitaciones aceptadas) */}
@@ -487,15 +488,8 @@ function NotificationsTab({
 }) {
     const notifications = initialNotifications;
 
-    if (notifications.length === 0) {
-        return (
-            <div className="py-10 text-center text-sm text-gray-500 border-2 border-dashed border-white/10 rounded-2xl">
-                No tienes notificaciones por ahora.
-            </div>
-        );
-    }
-
     const total = notifications.length;
+    const unread = notifications.filter((n) => !n.isRead).length;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
     const paged = useMemo(() => {
@@ -503,86 +497,100 @@ function NotificationsTab({
         return notifications.slice(start, start + PAGE_SIZE);
     }, [notifications, page]);
 
+    if (notifications.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-white/10 rounded-2xl">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+                    <BellOff className="w-8 h-8 text-gray-600" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">Todo al día</h3>
+                <p className="text-sm text-gray-500 max-w-xs mx-auto">No tienes notificaciones por ahora. Te avisaremos cuando haya novedades.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold">Mis Notificaciones</h2>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                        Mis Notificaciones
+                        {unread > 0 && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold">{unread}</span>
+                        )}
+                    </h2>
                     <p className="text-gray-400 text-sm">Revisa tus notificaciones y actualizaciones.</p>
                 </div>
-                <div className="flex justify-end">
-                    <form action={markAllUserNotificationsRead}>
-                        <button
-                            type="submit"
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-full font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2 cursor-pointer"
-                        >
-                            <BookCheck size={20} /> Marcar como leído
-                        </button>
-                    </form>
-                </div>
+                {unread > 0 && (
+                    <div className="flex justify-end">
+                        <form action={markAllUserNotificationsRead}>
+                            <button
+                                type="submit"
+                                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-full font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2 cursor-pointer"
+                            >
+                                <BookCheck size={20} /> Marcar todas como leídas
+                            </button>
+                        </form>
+                    </div>
+                )}
             </div>
 
             <ul className="space-y-3">
                 {paged.map((n) => {
                     const isCollaboration = n.type === "COLLABORATION";
+                    const accent = isCollaboration
+                        ? { text: "text-amber-400", iconBg: "bg-amber-500/10", border: "border-amber-500/30", tint: "bg-amber-500/[0.04]", dot: "bg-amber-400", label: "Invitación de colaboración", Icon: Users }
+                        : { text: "text-blue-400", iconBg: "bg-blue-500/10", border: "border-blue-500/40", tint: "bg-blue-500/[0.04]", dot: "bg-blue-400", label: "Sistema", Icon: Info };
+                    const Icon = accent.Icon;
 
                     return (
                         <li
                             key={n.id}
                             className={clsx(
-                                "p-4 rounded-xl border-2 text-sm",
-                                isCollaboration
-                                    ? n.isRead
-                                        ? "border-white/10 bg-neutral-900/60 text-gray-400"
-                                        : "border-amber-500/30 bg-amber-500/5 text-gray-200"
-                                    : n.isRead
-                                        ? "border-white/10 bg-neutral-900/60 text-gray-300"
-                                        : "border-blue-500/40 bg-blue-500/5 text-blue-100"
+                                "flex gap-4 p-4 rounded-2xl border-2 transition-colors",
+                                n.isRead ? "border-white/10 bg-neutral-900/40" : `${accent.border} ${accent.tint}`
                             )}
                         >
-                            <div className="flex items-start justify-between gap-4 flex-wrap">
-                                <div className="flex-1 min-w-0">
-                                    {isCollaboration && (
-                                        <div className="flex items-center gap-1.5 mb-2">
-                                            <Mail className="w-3.5 h-3.5 text-amber-400" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                                                Invitación de colaboración
-                                            </span>
-                                        </div>
-                                    )}
-                                    <p>{n.message}</p>
-                                    <p className="text-[11px] text-gray-500 mt-1">
-                                        {formatDistanceToNow(n.createdAt, { addSuffix: true, locale: es })}
-                                    </p>
-                                </div>
+                            <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", n.isRead ? "bg-white/5 text-gray-500" : `${accent.iconBg} ${accent.text}`)}>
+                                <Icon size={18} />
+                            </div>
 
-                                <div className="flex flex-col items-end gap-2 shrink-0">
-                                    {/* Colaboración pendiente → redirigir a eventos */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className={clsx("text-[10px] font-bold uppercase tracking-wider", n.isRead ? "text-gray-500" : accent.text)}>
+                                        {accent.label}
+                                    </span>
+                                    {!n.isRead && <span className={clsx("w-2 h-2 rounded-full", accent.dot)} />}
+                                </div>
+                                <p className={clsx("text-sm leading-relaxed", n.isRead ? "text-gray-400" : "text-gray-100")}>{n.message}</p>
+                                <p className="text-[11px] text-gray-500 mt-1.5">
+                                    {formatDistanceToNow(n.createdAt, { addSuffix: true, locale: es })}
+                                </p>
+
+                                <div className="mt-3 flex items-center gap-3 flex-wrap">
                                     {isCollaboration && !n.isRead && (
                                         <a
                                             href="/dashboard?tab=events"
-                                            className="text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2 whitespace-nowrap transition-colors"
+                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors"
                                         >
-                                            Ver en Mis Eventos
+                                            <Mail size={13} /> Ver en Mis Eventos
                                         </a>
                                     )}
                                     {isCollaboration && n.isRead && (
                                         <span className="text-[11px] text-gray-600">Ya respondida</span>
                                     )}
-
-                                    {/* Notificaciones de sistema */}
                                     {!isCollaboration && n.link && (
-                                        <a href={n.link} className="text-xs text-blue-400 hover:text-blue-200 underline underline-offset-2 whitespace-nowrap">
-                                            Ver detalle
+                                        <a href={n.link} className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">
+                                            <ChevronRight size={13} /> Ver detalle
                                         </a>
                                     )}
                                     {!isCollaboration && !n.isRead && (
                                         <form action={markUserNotificationRead.bind(null, n.id)}>
                                             <button
                                                 type="submit"
-                                                className="text-[11px] px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-gray-100 border-2 border-white/20 cursor-pointer whitespace-nowrap"
+                                                className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-200 border-2 border-white/10 cursor-pointer transition-colors"
                                             >
-                                                Marcar como leída
+                                                <BookCheck size={12} /> Marcar como leída
                                             </button>
                                         </form>
                                     )}
@@ -594,7 +602,7 @@ function NotificationsTab({
             </ul>
 
             {total > PAGE_SIZE && (
-                <Pagination className="mt-6" page={page} setPage={setPage} totalPages={totalPages} />
+                <Pagination className="mt-6" page={page} setPage={setPage} totalPages={totalPages} total={total} itemLabel="notificaciones" />
             )}
         </div>
     );
@@ -625,8 +633,12 @@ function SupportTab({
                         <CreateTicketButton />
                     </div>
                 </div>
-                <div className="py-10 text-center text-sm text-gray-500 border-2 border-dashed border-white/10 rounded-2xl">
-                    No tienes tickets abiertos. Crea uno nuevo si necesitas ayuda.
+                <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-white/10 rounded-2xl">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+                        <MessagesSquare className="w-8 h-8 text-gray-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-1">No tienes tickets abiertos</h3>
+                    <p className="text-sm text-gray-500 max-w-xs mx-auto">Crea uno nuevo si necesitas ayuda; el equipo te responderá por aquí.</p>
                 </div>
             </section>
         );
@@ -654,33 +666,37 @@ function SupportTab({
                 </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
                 {paged.map((chat) => (
                     <a
                         key={chat.id}
                         href={`/dashboard/support/${chat.id}`}
-                        className="block p-4 rounded-xl border-2 border-white/10 bg-neutral-900/60 hover:border-blue-500/40 hover:bg-neutral-900 transition-colors text-sm cursor-pointer"
+                        className="group flex items-center gap-4 p-4 rounded-2xl border-2 border-white/10 bg-neutral-900/60 hover:border-blue-500/40 hover:bg-neutral-900 transition-colors cursor-pointer"
                     >
-                        <div className="flex justify-between items-center">
-                            <div className="font-semibold">Ticket #{chat.id.slice(0, 8)}</div>
-                            <span
-                                className={clsx(
-                                    "text-[11px] px-2 py-0.5 rounded-full border-2",
-                                    chat.isClosed
-                                        ? "border-red-500/40 text-red-300 bg-red-500/10"
-                                        : "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
-                                )}
-                            >
-                                {chat.isClosed ? "Cerrado" : "Abierto"}
-                            </span>
+                        <Avatar name="Soporte" variant="support" size="lg" />
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="font-bold text-white group-hover:text-blue-400 transition-colors">
+                                    Ticket #{chat.id.slice(0, 8)}
+                                </span>
+                                <span
+                                    className={clsx(
+                                        "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border-2 font-bold",
+                                        chat.isClosed
+                                            ? "border-red-500/30 text-red-400 bg-red-500/10"
+                                            : "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                                    )}
+                                >
+                                    {chat.isClosed ? <Lock size={10} /> : <CheckCircle2 size={10} />}
+                                    {chat.isClosed ? "Cerrado" : "Abierto"}
+                                </span>
+                            </div>
+                            <p className="text-[11px] text-gray-500">
+                                Último mensaje{" "}
+                                {formatDistanceToNow(chat.lastMessageAt, { addSuffix: true, locale: es })}
+                            </p>
                         </div>
-                        <p className="mt-1 text-[11px] text-gray-400">
-                            Último mensaje{" "}
-                            {formatDistanceToNow(chat.lastMessageAt, {
-                                addSuffix: true,
-                                locale: es,
-                            })}
-                        </p>
+                        <ChevronRight size={18} className="text-gray-600 group-hover:text-white transition-colors shrink-0" />
                     </a>
                 ))}
             </div>
@@ -692,6 +708,8 @@ function SupportTab({
                     page={page}
                     setPage={setPage}
                     totalPages={totalPages}
+                    total={total}
+                    itemLabel="tickets"
                 />
             )}
         </section>
@@ -700,48 +718,89 @@ function SupportTab({
 
 /* =======================
    Reusable Pagination UI
+   (mismo estilo que el explorador de /polls)
    ======================= */
 function Pagination({
     page,
     setPage,
     totalPages,
+    total,
+    itemLabel,
     className,
 }: {
     page: number;
     setPage: (n: number) => void;
     totalPages: number;
+    total?: number;
+    itemLabel?: string;
     className?: string;
 }) {
     const prev = () => setPage(Math.max(1, page - 1));
     const next = () => setPage(Math.min(totalPages, page + 1));
 
+    const pillClass =
+        "flex items-center gap-1.5 px-4 py-2 rounded-full border-2 border-white/10 bg-white/5 text-sm font-semibold text-gray-400 hover:border-white/25 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer";
+
     return (
-        <div className={clsx("flex items-center justify-center gap-3", className)}>
-            <button
-                onClick={prev}
-                disabled={page <= 1}
-                className={clsx(
-                    "px-3 py-1 rounded-md text-sm border-2 transition-colors",
-                    page <= 1 ? "text-gray-500 border-white/5 cursor-not-allowed" : "text-white border-white/20 hover:bg-white/5 cursor-pointer"
-                )}
-            >
-                Anterior
-            </button>
+        <div className={clsx("flex flex-col items-center gap-4", className)}>
+            <p className="text-xs text-gray-600 font-mono">
+                Página {page} de {totalPages}
+                {typeof total === "number" && itemLabel ? ` · ${total} ${itemLabel}` : ""}
+            </p>
+            <div className="flex items-center gap-2">
+                {/* Anterior */}
+                <button onClick={prev} disabled={page <= 1} className={pillClass}>
+                    <ChevronLeft size={15} />
+                    Anterior
+                </button>
 
-            <div className="text-sm text-gray-300">
-                Page {page} / {totalPages}
+                {/* Números de página */}
+                <div className="flex items-center gap-1">
+                    {getPageNumbers(page, totalPages).map((p, i) =>
+                        p === "..." ? (
+                            <span key={`ellipsis-${i}`} className="px-2 text-gray-600 text-sm select-none">
+                                …
+                            </span>
+                        ) : (
+                            <button
+                                key={p}
+                                onClick={() => setPage(p as number)}
+                                className={clsx(
+                                    "w-9 h-9 rounded-full text-sm font-bold transition-all cursor-pointer",
+                                    page === p
+                                        ? "bg-blue-600 text-white border-2 border-blue-500 shadow-lg shadow-blue-900/30"
+                                        : "border-2 border-white/10 bg-white/5 text-gray-400 hover:border-white/25 hover:text-white"
+                                )}
+                            >
+                                {p}
+                            </button>
+                        )
+                    )}
+                </div>
+
+                {/* Siguiente */}
+                <button onClick={next} disabled={page >= totalPages} className={pillClass}>
+                    Siguiente
+                    <ChevronRight size={15} />
+                </button>
             </div>
-
-            <button
-                onClick={next}
-                disabled={page >= totalPages}
-                className={clsx(
-                    "px-3 py-1 rounded-md text-sm border-2 transition-colors",
-                    page >= totalPages ? "text-gray-500 border-white/5 cursor-not-allowed" : "text-white border-white/20 hover:bg-white/5 cursor-pointer"
-                )}
-            >
-                Siguiente
-            </button>
         </div>
     );
+}
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+    const pages: (number | "...")[] = [1];
+
+    if (current > 3) pages.push("...");
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (current < total - 2) pages.push("...");
+
+    pages.push(total);
+    return pages;
 }

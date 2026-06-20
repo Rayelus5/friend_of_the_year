@@ -114,6 +114,8 @@ export default function PollList({
     const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    // Motivo del aviso de mejora: límite de categorías alcanzado o función CSV bloqueada.
+    const [upgradeReason, setUpgradeReason] = useState<"limit" | "csv">("limit");
     const [showCsvModal, setShowCsvModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
@@ -131,6 +133,7 @@ export default function PollList({
 
     const handleCreateClick = () => {
         if (isAtLimit) {
+            setUpgradeReason("limit");
             setShowUpgradeModal(true);
         } else {
             setTitle("");
@@ -138,6 +141,11 @@ export default function PollList({
             setSelectedParticipantIds([]);
             setIsCreating(true);
         }
+    };
+
+    const handleCsvClick = () => {
+        if (canImportCsv) setShowCsvModal(true);
+        else { setUpgradeReason("csv"); setShowUpgradeModal(true); }
     };
 
     const openEdit = (poll: Poll) => {
@@ -201,12 +209,12 @@ export default function PollList({
                             className="w-full bg-neutral-900 border-2 border-white/10 rounded-full py-2 pl-9 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-colors"
                         />
                     </div>
-                    {canManagePolls && canImportCsv && (
+                    {canManagePolls && (
                         <button
-                            onClick={() => setShowCsvModal(true)}
+                            onClick={handleCsvClick}
                             className="bg-amber-500/10 text-amber-400 border-2 border-amber-500/20 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 hover:bg-amber-500/20 transition-colors whitespace-nowrap cursor-pointer"
                         >
-                            <FileSpreadsheet size={14} /> CSV
+                            <FileSpreadsheet size={14} /> CSV {!canImportCsv && <Lock size={11} />}
                         </button>
                     )}
                     {canManagePolls && (
@@ -236,12 +244,16 @@ export default function PollList({
                         >
                             <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 rounded-full blur-[80px] pointer-events-none -mr-16 -mt-16" />
                             <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                                <Lock className="text-amber-500" /> Límite Alcanzado
+                                <Lock className="text-amber-500" /> {upgradeReason === "csv" ? "Función CSV bloqueada" : "Límite Alcanzado"}
                             </h2>
                             <p className="text-gray-400 text-sm mb-6">
-                                Has creado el máximo de <strong>{currentLimit} categorías</strong> en tu plan actual.
+                                {upgradeReason === "csv" ? (
+                                    <>La importación por <strong>CSV</strong> está disponible en los planes <strong>Enterprise</strong> y <strong>Unlimited</strong>. Mejora tu plan para crear categorías en masa.</>
+                                ) : (
+                                    <>Has creado el máximo de <strong>{currentLimit} categorías</strong> en tu plan actual.</>
+                                )}
                             </p>
-                            <div className="bg-black/40 rounded-xl border-2 border-white/5 p-4 mb-8 space-y-3">
+                            <div className={`bg-black/40 rounded-xl border-2 border-white/5 p-4 mb-8 space-y-3 ${upgradeReason === "csv" ? "hidden" : ""}`}>
                                 <div className="flex justify-between items-center text-sm border-b-2 border-white/5 pb-2">
                                     <span className="text-gray-500">Tu Plan ({PLANS[planKey].name})</span>
                                     <span className="font-mono text-red-400">{currentLimit} categorías</span>
